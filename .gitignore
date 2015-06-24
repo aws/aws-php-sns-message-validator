@@ -1,0 +1,10 @@
+phpunit.xml
+Makefile
+/.idea/
+/*.iml
+atlassian-ide-plugin.xml
+.DS_Store
+.swp
+.build
+composer.lock
+vendor/

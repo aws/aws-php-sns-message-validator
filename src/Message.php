@@ -5,14 +5,35 @@ namespace Aws\Sns;
 class Message
 {
     private static $requiredKeys = [
-        '__default' => ['Message', 'MessageId', 'Timestamp', 'TopicArn',
-            'Type', 'Signature', 'SigningCertURL',],
-        'SubscriptionConfirmation' => ['SubscribeURL', 'Token'],
-        'UnsubscribeConfirmation' => ['SubscribeURL', 'Token']
+        '__default' => [
+            'Message',
+            'MessageId',
+            'Timestamp',
+            'TopicArn',
+            'Type',
+            'Signature',
+            'SigningCertURL',
+        ],
+        'SubscriptionConfirmation' => [
+            'SubscribeURL',
+            'Token',
+        ],
+        'UnsubscribeConfirmation' => [
+            'SubscribeURL',
+            'Token',
+        ],
     ];
 
-    private static $signableKeys = ['Message', 'MessageId', 'Subject',
-        'SubscribeURL', 'Timestamp', 'Token', 'TopicArn', 'Type'];
+    private static $signableKeys = [
+        'Message',
+        'MessageId',
+        'Subject',
+        'SubscribeURL',
+        'Timestamp',
+        'Token',
+        'TopicArn',
+        'Type',
+    ];
 
     /** @var array The message data */
     private $data;
@@ -59,8 +80,8 @@ class Message
         // Determine required keys and create a collection from the message data
         $requiredKeys = array_merge(
             self::$requiredKeys['__default'],
-            isset(self::$requiredKeys[$data['Type']])
-                ? self::$requiredKeys[$data['Type']]
+            isset(self::$requiredKeys[$data['Type']]) ?
+                self::$requiredKeys[$data['Type']]
                 : []
         );
 

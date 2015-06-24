@@ -1,7 +1,6 @@
 <?php
-namespace Aws\Sns\Test;
 
-use Aws\Sns\Message;
+namespace Aws\Sns;
 
 /**
  * @covers Aws\Sns\Message
@@ -34,7 +33,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
     public function testFactorySucceedsWithGoodData()
     {
         $this->assertInstanceOf(
-            'Aws\Sns\MessageValidator\Message',
+            'Aws\Sns\Message',
             Message::fromArray($this->messageData)
         );
     }
@@ -67,7 +66,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         stream_wrapper_register('php', __NAMESPACE__ . '\MockPhpStream');
 
         $message = Message::fromRawPostData();
-        $this->assertInstanceOf('Aws\Sns\MessageValidator\Message', $message);
+        $this->assertInstanceOf('Aws\Sns\Message', $message);
 
         stream_wrapper_restore("php");
         unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);

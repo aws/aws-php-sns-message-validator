@@ -1,6 +1,7 @@
 phpunit.xml
 Makefile
-.idea
+/.idea/
+/*.iml
 atlassian-ide-plugin.xml
 .DS_Store
 .swp

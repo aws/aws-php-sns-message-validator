@@ -1,5 +1,6 @@
 <?php
-namespace Aws\Sns\Test;
+
+namespace Aws\Sns;
 
 class MockPhpStream
 {

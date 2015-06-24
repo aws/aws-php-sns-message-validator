@@ -13,19 +13,20 @@
     ],
     "support": {
         "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
-        "issues": "https://github.com/aws/aws-sdk-php/issues"
+        "issues": "https://github.com/aws/aws-sns-message-validator/issues"
     },
     "require": {
         "php": ">=5.4",
         "ext-openssl": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "^4.0"
+        "phpunit/phpunit": "^4.0",
+        "squizlabs/php_codesniffer": "^2.3"
     },
     "autoload": {
         "psr-4": { "Aws\\Sns\\": "src/" }
     },
     "autoload-dev": {
-        "psr-4": { "Aws\\Sns\\Test\\": "tests/" }
+        "psr-4": { "Aws\\Sns\\": "tests/" }
     }
 }

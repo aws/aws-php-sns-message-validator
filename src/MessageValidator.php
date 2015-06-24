@@ -1,4 +1,5 @@
 <?php
+
 namespace Aws\Sns;
 
 /**
@@ -8,13 +9,22 @@ namespace Aws\Sns;
 class MessageValidator
 {
     /**
+     * @var callable
+     */
+    private $remoteFileReader;
+
+    /**
      * Constructs the Message Validator object and ensures that openssl is
      * installed.
      *
+     * @param callable $remoteFileReader
+     *
      * @throws \RuntimeException If openssl is not installed
      */
-    public function __construct()
+    public function __construct(callable $remoteFileReader = null)
     {
+        $this->remoteFileReader = $remoteFileReader ?: 'file_get_contents';
+
         if (!extension_loaded('openssl')) {
             //@codeCoverageIgnoreStart
             throw new \RuntimeException('The openssl extension is required to '
@@ -40,11 +50,12 @@ class MessageValidator
         $this->validateUrl($certUrl);
 
         // Get the cert itself and extract the public key
-        $certificate = file_get_contents($certUrl);
+        $certificate = call_user_func($this->remoteFileReader, $certUrl);
         $key = openssl_get_publickey($certificate);
         if (!$key) {
-            throw new MessageValidatorException('Cannot get the public key '
-                . 'from the certificate.');
+            throw new MessageValidatorException(
+                'Cannot get the public key from the certificate.'
+            );
         }
 
         // Verify the signature of the message
@@ -52,8 +63,9 @@ class MessageValidator
         $signature = base64_decode($message->get('Signature'));
 
         if (!openssl_verify($content, $signature, $key, OPENSSL_ALGO_SHA1)) {
-            throw new MessageValidatorException('The message signature is '
-                . 'invalid.');
+            throw new MessageValidatorException(
+                'The message signature is invalid.'
+            );
         }
     }
 
@@ -88,7 +100,9 @@ class MessageValidator
         // The cert URL must be https, a .pem, and match the following pattern.
         static $hostPattern = '/^sns\.[a-zA-Z0-9\-]{3,}\.amazonaws\.com(\.cn)?$/';
         $parsed = parse_url($url);
-        if ($parsed['scheme'] !== 'https'
+        if (empty($parsed['scheme'])
+            || empty($parsed['host'])
+            || $parsed['scheme'] !== 'https'
             || substr($url, -4) !== '.pem'
             || !preg_match($hostPattern, $parsed['host'])
         ) {

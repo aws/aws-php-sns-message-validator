@@ -8,6 +8,8 @@ namespace Aws\Sns;
  */
 class MessageValidator
 {
+    const SUPPORTED_SIGNATURE_VERSION = '1';
+
     /**
      * @var callable
      */
@@ -45,7 +47,8 @@ class MessageValidator
      */
     public function validate(Message $message)
     {
-        // Get and validate the URL for the certificate.
+        $this->validateSignatureVersion($message->get('SignatureVersion'));
+
         $certUrl = $message->get('SigningCertURL');
         $this->validateUrl($certUrl);
 
@@ -106,8 +109,18 @@ class MessageValidator
             || substr($url, -4) !== '.pem'
             || !preg_match($hostPattern, $parsed['host'])
         ) {
-            throw new MessageValidatorException('The certificate is located '
-                . 'on an invalid domain.');
+            throw new MessageValidatorException(
+                'The certificate is located on an invalid domain.'
+            );
+        }
+    }
+
+    private function validateSignatureVersion($version)
+    {
+        if ($version !== self::SUPPORTED_SIGNATURE_VERSION) {
+            throw new MessageValidatorException(
+                "Only v1 signatures can be validated; v{$version} provided"
+            );
         }
     }
 }

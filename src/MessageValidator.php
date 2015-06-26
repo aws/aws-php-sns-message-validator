@@ -1,10 +1,10 @@
 <?php
-
 namespace Aws\Sns;
 
+use Aws\Sns\Exception\InvalidSnsMessageException;
+
 /**
- * This class uses openssl to verify SNS messages to ensure that they were sent
- * by AWS.
+ * Uses openssl to verify SNS messages to ensure that they were sent by AWS.
  */
 class MessageValidator
 {
@@ -26,14 +26,6 @@ class MessageValidator
     public function __construct(callable $remoteFileReader = null)
     {
         $this->remoteFileReader = $remoteFileReader ?: 'file_get_contents';
-
-        if (!extension_loaded('openssl')) {
-            //@codeCoverageIgnoreStart
-            throw new \RuntimeException('The openssl extension is required to '
-                . 'use the SNS message validator. Please install this '
-                . 'extension in order to use this feature.');
-            //@codeCoverageIgnoreEnd
-        }
     }
 
     /**
@@ -41,32 +33,32 @@ class MessageValidator
      *
      * @param Message $message The message to validate
      *
-     * @throws MessageValidatorException If the certificate cannot be
+     * @throws InvalidSnsMessageException If the certificate cannot be
      *     retrieved, if the certificate's source cannot be verified, or if the
      *     message's signature is invalid.
      */
     public function validate(Message $message)
     {
-        $this->validateSignatureVersion($message->get('SignatureVersion'));
+        $this->validateSignatureVersion($message['SignatureVersion']);
 
-        $certUrl = $message->get('SigningCertURL');
+        $certUrl = $message['SigningCertURL'];
         $this->validateUrl($certUrl);
 
         // Get the cert itself and extract the public key
         $certificate = call_user_func($this->remoteFileReader, $certUrl);
         $key = openssl_get_publickey($certificate);
         if (!$key) {
-            throw new MessageValidatorException(
+            throw new InvalidSnsMessageException(
                 'Cannot get the public key from the certificate.'
             );
         }
 
         // Verify the signature of the message
         $content = $message->getStringToSign();
-        $signature = base64_decode($message->get('Signature'));
+        $signature = base64_decode($message['Signature']);
 
         if (!openssl_verify($content, $signature, $key, OPENSSL_ALGO_SHA1)) {
-            throw new MessageValidatorException(
+            throw new InvalidSnsMessageException(
                 'The message signature is invalid.'
             );
         }
@@ -85,7 +77,7 @@ class MessageValidator
         try {
             $this->validate($message);
             return true;
-        } catch (MessageValidatorException $e) {
+        } catch (InvalidSnsMessageException $e) {
             return false;
         }
     }
@@ -96,7 +88,7 @@ class MessageValidator
      *
      * @param string $url
      *
-     * @throws MessageValidatorException if the cert url is invalid
+     * @throws InvalidSnsMessageException if the cert url is invalid
      */
     private function validateUrl($url)
     {
@@ -109,7 +101,7 @@ class MessageValidator
             || substr($url, -4) !== '.pem'
             || !preg_match($hostPattern, $parsed['host'])
         ) {
-            throw new MessageValidatorException(
+            throw new InvalidSnsMessageException(
                 'The certificate is located on an invalid domain.'
             );
         }
@@ -118,7 +110,7 @@ class MessageValidator
     private function validateSignatureVersion($version)
     {
         if ($version !== self::SUPPORTED_SIGNATURE_VERSION) {
-            throw new MessageValidatorException(
+            throw new InvalidSnsMessageException(
                 "Only v1 signatures can be validated; v{$version} provided"
             );
         }

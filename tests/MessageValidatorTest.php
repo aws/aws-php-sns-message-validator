@@ -1,5 +1,4 @@
 <?php
-
 namespace Aws\Sns;
 
 /**
@@ -7,10 +6,9 @@ namespace Aws\Sns;
  */
 class MessageValidatorTest extends \PHPUnit_Framework_TestCase
 {
-    const VALID_CERT_URL = "https://sns.foo.amazonaws.com/bar.pem";
+    const VALID_CERT_URL = 'https://sns.foo.amazonaws.com/bar.pem';
 
     private static $pKey;
-
     private static $certificate;
 
     public static function setUpBeforeClass()
@@ -18,7 +16,6 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         self::$pKey = openssl_pkey_new();
         $csr = openssl_csr_new([], self::$pKey);
         $x509 = openssl_csr_sign($csr, null, self::$pKey, 1);
-
         openssl_x509_export($x509, self::$certificate);
         openssl_x509_free($x509);
     }
@@ -31,109 +28,101 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
     public function testIsValidReturnsFalseOnFailedValidation()
     {
         $validator = new MessageValidator();
-        $message = new Message([]);
+        $message = $this->getTestMessage([
+            'SignatureVersion' => '2',
+        ]);
         $this->assertFalse($validator->isValid($message));
     }
 
     /**
-     * @expectedException \Aws\Sns\MessageValidatorException
+     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
      * @expectedExceptionMessage Only v1 signatures can be validated; v2 provided
      */
     public function testValidateFailsWhenSignatureVersionIsInvalid()
     {
         $validator = new MessageValidator();
-        $message = new Message([
+        $message = $this->getTestMessage([
             'SignatureVersion' => '2',
         ]);
         $validator->validate($message);
     }
 
     /**
-     * @expectedException \Aws\Sns\MessageValidatorException
+     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
      * @expectedExceptionMessage The certificate is located on an invalid domain.
      */
     public function testValidateFailsWhenCertUrlInvalid()
     {
         $validator = new MessageValidator();
-        $message = new Message([
+        $message = $this->getTestMessage([
             'SigningCertURL' => 'https://foo.amazonaws.com/bar',
-            'SignatureVersion' => '1',
         ]);
         $validator->validate($message);
     }
 
     /**
-     * @expectedException \Aws\Sns\MessageValidatorException
+     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
      * @expectedExceptionMessage Cannot get the public key from the certificate.
      */
     public function testValidateFailsWhenCannotDeterminePublicKey()
     {
-        $validator = new MessageValidator($this->getMockHttpClient(''));
-        $message = new Message([
-            'SigningCertURL' => self::VALID_CERT_URL,
-            'SignatureVersion' => '1',
-        ]);
+        $validator = new MessageValidator($this->getMockHttpClient());
+        $message = $this->getTestMessage();
         $validator->validate($message);
     }
 
     /**
-     * @expectedException \Aws\Sns\MessageValidatorException
+     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
      * @expectedExceptionMessage The message signature is invalid.
      */
     public function testValidateFailsWhenMessageIsInvalid()
     {
-        // Get the signature for some dummy data
-        $signature = $this->getSignature('foo');
-        // Create the validator with a mock HTTP client that will respond with
-        // the certificate
         $validator = new MessageValidator($this->getMockCertServerClient());
-        $message = new Message([
-            'SigningCertURL' => self::VALID_CERT_URL,
-            'Signature'      => $signature,
-            'SignatureVersion' => '1',
+        $message = $this->getTestMessage([
+            'Signature' => $this->getSignature('foo'),
         ]);
         $validator->validate($message);
     }
 
     public function testValidateSucceedsWhenMessageIsValid()
     {
-        // Create a real message
-        $message = Message::fromArray([
-            'Message'        => 'foo',
-            'MessageId'      => 'bar',
-            'Timestamp'      => time(),
-            'TopicArn'       => 'baz',
-            'Type'           => 'Notification',
-            'SigningCertURL' => self::VALID_CERT_URL,
-            'Signature'      => ' ',
-            'SignatureVersion' => '1',
-        ]);
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message = $this->getTestMessage();
 
         // Get the signature for a real message
-        $signature = $this->getSignature($message->getStringToSign());
-        $ref = new \ReflectionProperty($message, 'data');
-        $ref->setAccessible(true);
-        $ref->setValue(
-            $message,
-            ['Signature' => $signature] + $ref->getValue($message)
-        );
-
-        // Create the validator with a mock HTTP client that will respond with
-        // the certificate
-        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message['Signature'] = $this->getSignature($message->getStringToSign());
 
         // The message should validate
         $this->assertTrue($validator->isValid($message));
     }
 
-    protected function getMockHttpClient($responseBody)
+    /**
+     * @param array $customData
+     *
+     * @return Message
+     */
+    private function getTestMessage(array $customData = [])
+    {
+        return new Message($customData + [
+            'Message'          => 'foo',
+            'MessageId'        => 'bar',
+            'Timestamp'        => time(),
+            'TopicArn'         => 'baz',
+            'Type'             => 'Notification',
+            'SigningCertURL'   => self::VALID_CERT_URL,
+            'Signature'        => true,
+            'SignatureVersion' => '1',
+        ]);
+    }
+
+    private function getMockHttpClient($responseBody = '')
     {
         return function () use ($responseBody) {
             return $responseBody;
         };
     }
 
-    protected function getMockCertServerClient()
+    private function getMockCertServerClient()
     {
         return function ($url) {
             if ($url !== self::VALID_CERT_URL) {
@@ -144,7 +133,7 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         };
     }
 
-    protected function getSignature($stringToSign)
+    private function getSignature($stringToSign)
     {
         openssl_sign($stringToSign, $signature, self::$pKey);
 

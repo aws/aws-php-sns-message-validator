@@ -1,5 +1,4 @@
 <?php
-
 namespace Aws\Sns;
 
 /**
@@ -23,19 +22,17 @@ class MessageTest extends \PHPUnit_Framework_TestCase
     public function testGetters()
     {
         $message = new Message($this->messageData);
-        $this->assertInternalType('array', $message->getData());
+        $this->assertInternalType('array', $message->toArray());
 
         foreach ($this->messageData as $key => $expectedValue) {
-            $this->assertEquals($expectedValue, $message->get($key));
+            $this->assertTrue(isset($message[$key]));
+            $this->assertEquals($expectedValue, $message[$key]);
         }
     }
 
     public function testFactorySucceedsWithGoodData()
     {
-        $this->assertInstanceOf(
-            'Aws\Sns\Message',
-            Message::fromArray($this->messageData)
-        );
+        $this->assertInstanceOf('Aws\Sns\Message', new Message($this->messageData));
     }
 
     /**
@@ -45,7 +42,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
     {
         $data = $this->messageData;
         unset($data['Type']);
-        Message::fromArray($data);
+        new Message($data);
     }
 
     /**
@@ -53,7 +50,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
      */
     public function testFactoryFailsWithMissingData()
     {
-        Message::fromArray(array('Type' => 'Notification'));
+        new Message(['Type' => 'Notification']);
     }
 
     public function testCanCreateFromRawPost()
@@ -90,35 +87,18 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
     }
 
-    /**
-     * @dataProvider getDataForStringToSignTest
-     */
-    public function testBuildsStringToSignCorrectly(
-        array $messageData,
-        $expectedSubject,
-        $expectedStringToSign
-    ) {
-        $message = new Message($messageData);
-        $this->assertEquals($expectedSubject, $message->get('Subject'));
-        $this->assertEquals($expectedStringToSign, $message->getStringToSign());
-    }
-
-    public function getDataForStringToSignTest()
-    {
-        $testCases = array();
-
-        // Test case where one key is not signable
-        $testCases[0] = array();
-        $testCases[0][] = array(
-            'TopicArn'  => 'd',
-            'Message'   => 'a',
-            'Timestamp' => 'c',
-            'Type'      => 'e',
-            'MessageId' => 'b',
-            'FooBar'    => 'f',
-        );
-        $testCases[0][] = null;
-        $testCases[0][] = <<< STRINGTOSIGN
+    public function testBuildsStringToSignCorrectly( ) {
+        $message = new Message([
+            'TopicArn'       => 'd',
+            'Message'        => 'a',
+            'Timestamp'      => 'c',
+            'Type'           => 'e',
+            'MessageId'      => 'b',
+            'FooBar'         => 'f',
+            'Signature'      => true,
+            'SigningCertURL' => true,
+        ]);
+        $stringToSign = <<< STRINGTOSIGN
 Message
 a
 MessageId
@@ -131,34 +111,6 @@ Type
 e
 
 STRINGTOSIGN;
-
-        // Test case where all keys are signable
-        $testCases[1] = array();
-        $testCases[1][] = array(
-            'TopicArn'  => 'e',
-            'Message'   => 'a',
-            'Timestamp' => 'd',
-            'Type'      => 'f',
-            'MessageId' => 'b',
-            'Subject'   => 'c',
-        );
-        $testCases[1][] = 'c';
-        $testCases[1][] = <<< STRINGTOSIGN
-Message
-a
-MessageId
-b
-Subject
-c
-Timestamp
-d
-TopicArn
-e
-Type
-f
-
-STRINGTOSIGN;
-
-        return $testCases;
+        $this->assertEquals($stringToSign, $message->getStringToSign());
     }
 }

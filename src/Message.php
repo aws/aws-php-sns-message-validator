@@ -1,8 +1,10 @@
 <?php
-
 namespace Aws\Sns;
 
-class Message
+/**
+ * Represents an SNS message received over http(s).
+ */
+class Message implements \ArrayAccess, \IteratorAggregate
 {
     private static $requiredKeys = [
         '__default' => [
@@ -57,27 +59,27 @@ class Message
             throw new \RuntimeException('Invalid POST data.');
         }
 
-        return self::fromArray($data);
+        return new Message($data);
     }
 
     /**
-     * Creates a Message object from an array of raw message data
+     * Creates a Message object from an array of raw message data.
      *
      * @param array $data The message data.
      *
-     * @return Message
      * @throws \InvalidArgumentException If a valid type is not provided or
      *                                   there are other required keys missing.
      */
-    public static function fromArray(array $data)
+    public function __construct(array $data)
     {
         // Make sure the type key is set
         if (!isset($data['Type'])) {
-            throw new \InvalidArgumentException('The "Type" key must be '
-                . 'provided to instantiate a Message object.');
+            throw new \InvalidArgumentException(
+                'The "Type" must be provided to instantiate a Message object.'
+            );
         }
 
-        // Determine required keys and create a collection from the message data
+        // Determine the required keys for this message type.
         $requiredKeys = array_merge(
             self::$requiredKeys['__default'],
             isset(self::$requiredKeys[$data['Type']]) ?
@@ -85,6 +87,7 @@ class Message
                 : []
         );
 
+        // Ensure that all the required keys are provided.
         foreach ($requiredKeys as $key) {
             if (!isset($data[$key])) {
                 throw new \InvalidArgumentException(
@@ -93,37 +96,12 @@ class Message
             }
         }
 
-        return new self($data);
-    }
-
-    /**
-     * @param array $data Message data with all required keys.
-     */
-    public function __construct(array $data)
-    {
         $this->data = $data;
     }
 
-    /**
-     * Get the entire message data as an array.
-     *
-     * @return array
-     */
-    public function getData()
+    public function getIterator()
     {
-        return $this->data;
-    }
-
-    /**
-     * Gets a single key from the message data.
-     *
-     * @param string $key Key to retrieve
-     *
-     * @return string
-     */
-    public function get($key)
-    {
-        return isset($this->data[$key]) ? $this->data[$key] : null;
+        return new \ArrayIterator($this->data);
     }
 
     /**
@@ -136,11 +114,41 @@ class Message
     {
         $stringToSign = '';
         foreach (self::$signableKeys as $key) {
-            if ($value = $this->get($key)) {
-                $stringToSign .= "{$key}\n{$value}\n";
+            if (isset($this[$key])) {
+                $stringToSign .= "{$key}\n{$this[$key]}\n";
             }
         }
 
         return $stringToSign;
+    }
+
+    public function offsetExists($key)
+    {
+        return isset($this->data[$key]);
+    }
+
+    public function offsetGet($key)
+    {
+        return isset($this->data[$key]) ? $this->data[$key] : null;
+    }
+
+    public function offsetSet($key, $value)
+    {
+        $this->data[$key] = $value;
+    }
+
+    public function offsetUnset($key)
+    {
+        unset($this->data[$key]);
+    }
+
+    /**
+     * Get all the message data as a plain array.
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        return $this->data;
     }
 }

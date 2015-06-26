@@ -28,3 +28,9 @@ if ($validator->isValid($message)) {
    // do something with the message
 }
 ```
+
+### Thanks
+
+A special thanks goes out to [Julian Vidal](https://github.com/poisa) who helped
+create the [initial implementation](https://github.com/aws/aws-sdk-php/tree/2.8/src/Aws/Sns/MessageValidator)
+in Version 2 of the [AWS SDK for PHP](https://github.com/aws/aws-sdk-php).

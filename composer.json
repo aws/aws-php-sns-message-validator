@@ -1,5 +1,5 @@
 {
-    "name": "aws/aws-sns-message-validator",
+    "name": "aws/aws-php-sns-message-validator",
     "homepage": "http://aws.amazon.com/sdkforphp",
     "description": "Amazon SNS message validation for PHP",
     "keywords": ["aws","amazon","sdk","sns","message","webhooks","cloud"],

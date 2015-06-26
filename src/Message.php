@@ -53,9 +53,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
         }
 
         $data = json_decode(file_get_contents('php://input'), true);
-        if (JSON_ERROR_NONE !== json_last_error()) {
-            throw new \InvalidArgumentException('Unable to parse JSON.');
-        } elseif (!is_array($data)) {
+        if (JSON_ERROR_NONE !== json_last_error() || !is_array($data)) {
             throw new \RuntimeException('Invalid POST data.');
         }
 

@@ -27,7 +27,7 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
 
     public function testIsValidReturnsFalseOnFailedValidation()
     {
-        $validator = new MessageValidator();
+        $validator = new MessageValidator($this->getMockHttpClient());
         $message = $this->getTestMessage([
             'SignatureVersion' => '2',
         ]);
@@ -36,11 +36,11 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
-     * @expectedExceptionMessage Only v1 signatures can be validated; v2 provided
+     * @expectedExceptionMessage The SignatureVersion "2" is not supported.
      */
     public function testValidateFailsWhenSignatureVersionIsInvalid()
     {
-        $validator = new MessageValidator();
+        $validator = new MessageValidator($this->getMockCertServerClient());
         $message = $this->getTestMessage([
             'SignatureVersion' => '2',
         ]);
@@ -90,10 +90,33 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         $message = $this->getTestMessage();
 
         // Get the signature for a real message
-        $message['Signature'] = $this->getSignature($message->getStringToSign());
+        $message['Signature'] = $this->getSignature($validator->getStringToSign($message));
 
         // The message should validate
         $this->assertTrue($validator->isValid($message));
+    }
+
+    public function testBuildsStringToSignCorrectly()
+    {
+        $validator = new MessageValidator();
+        $stringToSign = <<< STRINGTOSIGN
+Message
+foo
+MessageId
+bar
+Timestamp
+1435697129
+TopicArn
+baz
+Type
+Notification
+
+STRINGTOSIGN;
+
+        $this->assertEquals(
+            $stringToSign,
+            $validator->getStringToSign($this->getTestMessage())
+        );
     }
 
     /**
@@ -139,4 +162,9 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
 
         return base64_encode($signature);
     }
+}
+
+function time()
+{
+    return 1435697129;
 }

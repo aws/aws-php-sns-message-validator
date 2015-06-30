@@ -7,16 +7,17 @@ namespace Aws\Sns;
 class MessageTest extends \PHPUnit_Framework_TestCase
 {
     public $messageData = array(
-        'Message'        => 'a',
-        'MessageId'      => 'b',
-        'Timestamp'      => 'c',
-        'TopicArn'       => 'd',
-        'Type'           => 'e',
-        'Subject'        => 'f',
-        'Signature'      => 'g',
+        'Message' => 'a',
+        'MessageId' => 'b',
+        'Timestamp' => 'c',
+        'TopicArn' => 'd',
+        'Type' => 'e',
+        'Subject' => 'f',
+        'Signature' => 'g',
+        'SignatureVersion' => '1',
         'SigningCertURL' => 'h',
-        'SubscribeURL'   => 'i',
-        'Token'          => 'j',
+        'SubscribeURL' => 'i',
+        'Token' => 'j',
     );
 
     public function testGetters()
@@ -85,32 +86,5 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         $_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = 'Notification';
         Message::fromRawPostData();
         unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
-    }
-
-    public function testBuildsStringToSignCorrectly( ) {
-        $message = new Message([
-            'TopicArn'       => 'd',
-            'Message'        => 'a',
-            'Timestamp'      => 'c',
-            'Type'           => 'e',
-            'MessageId'      => 'b',
-            'FooBar'         => 'f',
-            'Signature'      => true,
-            'SigningCertURL' => true,
-        ]);
-        $stringToSign = <<< STRINGTOSIGN
-Message
-a
-MessageId
-b
-Timestamp
-c
-TopicArn
-d
-Type
-e
-
-STRINGTOSIGN;
-        $this->assertEquals($stringToSign, $message->getStringToSign());
     }
 }

@@ -7,34 +7,14 @@ namespace Aws\Sns;
 class Message implements \ArrayAccess, \IteratorAggregate
 {
     private static $requiredKeys = [
-        '__default' => [
-            'Message',
-            'MessageId',
-            'Timestamp',
-            'TopicArn',
-            'Type',
-            'Signature',
-            'SigningCertURL',
-        ],
-        'SubscriptionConfirmation' => [
-            'SubscribeURL',
-            'Token',
-        ],
-        'UnsubscribeConfirmation' => [
-            'SubscribeURL',
-            'Token',
-        ],
-    ];
-
-    private static $signableKeys = [
         'Message',
         'MessageId',
-        'Subject',
-        'SubscribeURL',
         'Timestamp',
-        'Token',
         'TopicArn',
         'Type',
+        'Signature',
+        'SigningCertURL',
+        'SignatureVersion',
     ];
 
     /** @var array The message data */
@@ -48,10 +28,12 @@ class Message implements \ArrayAccess, \IteratorAggregate
      */
     public static function fromRawPostData()
     {
+        // Make sure the SNS-provided header exists.
         if (!isset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'])) {
             throw new \RuntimeException('SNS message type header not provided.');
         }
 
+        // Read the raw POST data and JSON-decode it.
         $data = json_decode(file_get_contents('php://input'), true);
         if (JSON_ERROR_NONE !== json_last_error() || !is_array($data)) {
             throw new \RuntimeException('Invalid POST data.');
@@ -70,28 +52,12 @@ class Message implements \ArrayAccess, \IteratorAggregate
      */
     public function __construct(array $data)
     {
-        // Make sure the type key is set
-        if (!isset($data['Type'])) {
-            throw new \InvalidArgumentException(
-                'The "Type" must be provided to instantiate a Message object.'
-            );
-        }
-
-        // Determine the required keys for this message type.
-        $requiredKeys = array_merge(
-            self::$requiredKeys['__default'],
-            isset(self::$requiredKeys[$data['Type']]) ?
-                self::$requiredKeys[$data['Type']]
-                : []
-        );
-
-        // Ensure that all the required keys are provided.
-        foreach ($requiredKeys as $key) {
-            if (!isset($data[$key])) {
-                throw new \InvalidArgumentException(
-                    "Missing key {$key} in the provided data."
-                );
-            }
+        // Ensure that all the required keys for the message's type are present.
+        $this->validateRequiredKeys($data, self::$requiredKeys);
+        if ($data['Type'] === 'SubscriptionConfirmation'
+            || $data['Type'] === 'UnsubscribeConfirmation'
+        ) {
+            $this->validateRequiredKeys($data, ['SubscribeURL', 'Token']);
         }
 
         $this->data = $data;
@@ -100,24 +66,6 @@ class Message implements \ArrayAccess, \IteratorAggregate
     public function getIterator()
     {
         return new \ArrayIterator($this->data);
-    }
-
-    /**
-     * Builds a newline delimited string-to-sign according to the specs.
-     *
-     * @return string
-     * @link http://docs.aws.amazon.com/sns/latest/gsg/SendMessageToHttp.verify.signature.html
-     */
-    public function getStringToSign()
-    {
-        $stringToSign = '';
-        foreach (self::$signableKeys as $key) {
-            if (isset($this[$key])) {
-                $stringToSign .= "{$key}\n{$this[$key]}\n";
-            }
-        }
-
-        return $stringToSign;
     }
 
     public function offsetExists($key)
@@ -148,5 +96,16 @@ class Message implements \ArrayAccess, \IteratorAggregate
     public function toArray()
     {
         return $this->data;
+    }
+
+    private function validateRequiredKeys(array $data, array $keys)
+    {
+        foreach ($keys as $key) {
+            if (!isset($data[$key])) {
+                throw new \InvalidArgumentException(
+                    "\"{$key}\" is required to verify the SNS Message."
+                );
+            }
+        }
     }
 }

@@ -8,44 +8,41 @@ use Aws\Sns\Exception\InvalidSnsMessageException;
  */
 class MessageValidator
 {
-    const SUPPORTED_SIGNATURE_VERSION = '1';
+    const SIGNATURE_VERSION_1 = '1';
 
     /**
-     * @var callable
+     * @var callable Callable used to download the certificate content.
      */
-    private $remoteFileReader;
+    private $certClient;
 
     /**
-     * Constructs the Message Validator object and ensures that openssl is
-     * installed.
-     *
-     * @param callable $remoteFileReader
+     * @param callable $certClient Callable used to download the certificate.
+     *                             Should have the following function signature:
+     *                             `function (string $certUrl) : string $certContent`
      *
      * @throws \RuntimeException If openssl is not installed
      */
-    public function __construct(callable $remoteFileReader = null)
+    public function __construct(callable $certClient = null)
     {
-        $this->remoteFileReader = $remoteFileReader ?: 'file_get_contents';
+        $this->certClient = $certClient ?: 'file_get_contents';
     }
 
     /**
-     * Validates a message from SNS to ensure that it was delivered by AWS
+     * Validates a message from SNS to ensure that it was delivered by AWS.
      *
-     * @param Message $message The message to validate
+     * @param Message $message Message to validate.
      *
-     * @throws InvalidSnsMessageException If the certificate cannot be
-     *     retrieved, if the certificate's source cannot be verified, or if the
-     *     message's signature is invalid.
+     * @throws InvalidSnsMessageException If the cert cannot be retrieved or its
+     *                                    source verified, or the message
+     *                                    signature is invalid.
      */
     public function validate(Message $message)
     {
-        $this->validateSignatureVersion($message['SignatureVersion']);
+        // Get the certificate.
+        $this->validateUrl($message['SigningCertURL']);
+        $certificate = call_user_func($this->certClient, $message['SigningCertURL']);
 
-        $certUrl = $message['SigningCertURL'];
-        $this->validateUrl($certUrl);
-
-        // Get the cert itself and extract the public key
-        $certificate = call_user_func($this->remoteFileReader, $certUrl);
+        // Extract the public key.
         $key = openssl_get_publickey($certificate);
         if (!$key) {
             throw new InvalidSnsMessageException(
@@ -53,10 +50,9 @@ class MessageValidator
             );
         }
 
-        // Verify the signature of the message
-        $content = $message->getStringToSign();
+        // Verify the signature of the message.
+        $content = $this->getStringToSign($message);
         $signature = base64_decode($message['Signature']);
-
         if (!openssl_verify($content, $signature, $key, OPENSSL_ALGO_SHA1)) {
             throw new InvalidSnsMessageException(
                 'The message signature is invalid.'
@@ -83,12 +79,49 @@ class MessageValidator
     }
 
     /**
-     * Ensures that the url of the certificate is one belonging to AWS, and not
-     * just something from the amazonaws domain, which includes S3 buckets.
+     * Builds string-to-sign according to the SNS message spec.
      *
-     * @param string $url
+     * @param Message $message Message for which to build the string-to-sign.
      *
-     * @throws InvalidSnsMessageException if the cert url is invalid
+     * @return string
+     * @link http://docs.aws.amazon.com/sns/latest/gsg/SendMessageToHttp.verify.signature.html
+     */
+    public function getStringToSign(Message $message)
+    {
+        static $signableKeys = [
+            'Message',
+            'MessageId',
+            'Subject',
+            'SubscribeURL',
+            'Timestamp',
+            'Token',
+            'TopicArn',
+            'Type',
+        ];
+
+        if ($message['SignatureVersion'] !== self::SIGNATURE_VERSION_1) {
+            throw new InvalidSnsMessageException(
+                "The SignatureVersion \"{$message['SignatureVersion']}\" is not supported."
+            );
+        }
+
+        $stringToSign = '';
+        foreach ($signableKeys as $key) {
+            if (isset($message[$key])) {
+                $stringToSign .= "{$key}\n{$message[$key]}\n";
+            }
+        }
+
+        return $stringToSign;
+    }
+
+    /**
+     * Ensures that the URL of the certificate is one belonging to AWS, and not
+     * just something from the amazonaws domain, which could include S3 buckets.
+     *
+     * @param string $url Certificate URL
+     *
+     * @throws InvalidSnsMessageException if the cert url is invalid.
      */
     private function validateUrl($url)
     {
@@ -103,15 +136,6 @@ class MessageValidator
         ) {
             throw new InvalidSnsMessageException(
                 'The certificate is located on an invalid domain.'
-            );
-        }
-    }
-
-    private function validateSignatureVersion($version)
-    {
-        if ($version !== self::SUPPORTED_SIGNATURE_VERSION) {
-            throw new InvalidSnsMessageException(
-                "Only v1 signatures can be validated; v{$version} provided"
             );
         }
     }

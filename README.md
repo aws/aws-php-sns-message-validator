@@ -138,8 +138,9 @@ using tools like [ngrok][] and [PHP's built-in webserver][php-service]. Our blog
 post, [*Testing Webhooks Locally for Amazon SNS*][blogpost], illustrates a good
 technique for testing.
 
-> **NOTE:** the code samples in that blog post are specific to Message Validator
-> in Version 2 of the SDK, but can be easily adapted to using this version.
+> **NOTE:** The code samples in the blog post are specific to the message
+> validator in Version 2 of the SDK, but can be easily adapted to using this
+> version.
 
 ### Special Thank You
 

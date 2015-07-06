@@ -134,9 +134,9 @@ if ($message['Type'] === 'UnsubscribeConfirmation') {
 
 One challenge of using webhooks in a web application is testing the integration
 with the service. Testing integrations with SNS notifications can be fairly easy
-using tools like [ngrok][] and [PHP's built-in webserver][php-service]. Our blog
-post, [*Testing Webhooks Locally for Amazon SNS*][blogpost], illustrates a good
-technique for testing.
+using tools like [ngrok][] and [PHP's built-in webserver][php-server]. One of
+our blog posts, [*Testing Webhooks Locally for Amazon SNS*][blogpost], illustrates
+a good technique for testing.
 
 > **NOTE:** The code samples in the blog post are specific to the message
 > validator in Version 2 of the SDK, but can be easily adapted to using this

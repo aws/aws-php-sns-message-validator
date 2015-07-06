@@ -112,7 +112,8 @@ check for the `Notification` message type.
 
 ```php
 if ($message['Type'] === 'Notification') {
-   // Do whatever you want with the message body.
+   // Do whatever you want with the message body and data.
+   echo $message['MessageId'] . ': ' . $message['Message'] . "\n";
 }
 ```
 

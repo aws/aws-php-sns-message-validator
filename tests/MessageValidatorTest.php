@@ -2,7 +2,7 @@
 namespace Aws\Sns;
 
 /**
- * @covers MessageValidator
+ * @covers Aws\Sns\MessageValidator
  */
 class MessageValidatorTest extends \PHPUnit_Framework_TestCase
 {
@@ -55,9 +55,37 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
     {
         $validator = new MessageValidator();
         $message = $this->getTestMessage([
+            'SigningCertURL' => 'https://foo.amazonaws.com/bar.pem',
+        ]);
+        $validator->validate($message);
+    }
+
+    /**
+     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
+     * @expectedExceptionMessage The certificate is located on an invalid domain.
+     */
+    public function testValidateFailsWhenCertUrlNotAPemFile()
+    {
+        $validator = new MessageValidator();
+        $message = $this->getTestMessage([
             'SigningCertURL' => 'https://foo.amazonaws.com/bar',
         ]);
         $validator->validate($message);
+    }
+
+    public function testValidatesAgainstCustomDomains()
+    {
+        $validator = new MessageValidator(
+            function () {
+                return self::$certificate;
+            },
+            ['/^(foo|bar).example.com$/']
+        );
+        $message = $this->getTestMessage([
+            'SigningCertURL' => 'https://foo.example.com/baz.pem',
+        ]);
+        $message['Signature'] = $this->getSignature($validator->getStringToSign($message));
+        $this->assertTrue($validator->isValid($message));
     }
 
     /**

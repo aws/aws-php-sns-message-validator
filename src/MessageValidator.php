@@ -15,16 +15,32 @@ class MessageValidator
      */
     private $certClient;
 
+    /** @var string[] */
+    private $hostNamePatterns;
+
+    /** @var array */
+    private static $defaultHostNamePatterns = [
+        '/^sns\.[a-zA-Z0-9\-]{3,}\.amazonaws\.com(\.cn)?$/'
+    ];
+
     /**
+     * Constructs the Message Validator object and ensures that openssl is
+     * installed.
+     *
      * @param callable $certClient Callable used to download the certificate.
      *                             Should have the following function signature:
      *                             `function (string $certUrl) : string $certContent`
-     *
-     * @throws \RuntimeException If openssl is not installed
+     * @param string[] $awsHostNamePatterns
      */
-    public function __construct(callable $certClient = null)
-    {
+    public function __construct(
+        callable $certClient = null,
+        array $awsHostNamePatterns = []
+    ) {
         $this->certClient = $certClient ?: 'file_get_contents';
+        $this->hostNamePatterns = array_merge(
+            $awsHostNamePatterns,
+            self::$defaultHostNamePatterns
+        );
     }
 
     /**
@@ -125,18 +141,22 @@ class MessageValidator
      */
     private function validateUrl($url)
     {
-        // The cert URL must be https, a .pem, and match the following pattern.
-        static $hostPattern = '/^sns\.[a-zA-Z0-9\-]{3,}\.amazonaws\.com(\.cn)?$/';
         $parsed = parse_url($url);
-        if (empty($parsed['scheme'])
-            || empty($parsed['host'])
-            || $parsed['scheme'] !== 'https'
-            || substr($url, -4) !== '.pem'
-            || !preg_match($hostPattern, $parsed['host'])
+        if (isset($parsed['scheme'])
+            && isset($parsed['host'])
+            && $parsed['scheme'] === 'https'
+            && substr($url, -4) === '.pem'
+
         ) {
-            throw new InvalidSnsMessageException(
-                'The certificate is located on an invalid domain.'
-            );
+            foreach ($this->hostNamePatterns as $hostPattern) {
+                if (preg_match($hostPattern, $parsed['host'])) {
+                    return;
+                }
+            }
         }
+
+        throw new InvalidSnsMessageException(
+            'The certificate is located on an invalid domain.'
+        );
     }
 }

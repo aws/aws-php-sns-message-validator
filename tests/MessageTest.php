@@ -42,15 +42,31 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-    public function testFactorySucceedsWithGoodData()
+    /**
+     * @dataProvider messageTypeProvider
+     *
+     * @param string $messageType
+     */
+    public function testConstructorSucceedsWithGoodData($messageType)
     {
-        $this->assertInstanceOf('Aws\Sns\Message', new Message($this->messageData));
+        $this->assertInstanceOf('Aws\Sns\Message', new Message(
+            ['Type' => $messageType] + $this->messageData
+        ));
+    }
+
+    public function messageTypeProvider()
+    {
+        return [
+            ['Notification'],
+            ['SubscriptionConfirmation'],
+            ['UnsubscribeConfirmation'],
+        ];
     }
 
     /**
      * @expectedException \InvalidArgumentException
      */
-    public function testFactoryFailsWithNoType()
+    public function testConstructorFailsWithNoType()
     {
         $data = $this->messageData;
         unset($data['Type']);
@@ -60,7 +76,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
     /**
      * @expectedException \InvalidArgumentException
      */
-    public function testFactoryFailsWithMissingData()
+    public function testConstructorFailsWithMissingData()
     {
         new Message(['Type' => 'Notification']);
     }

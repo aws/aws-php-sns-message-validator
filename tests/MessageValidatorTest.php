@@ -79,7 +79,7 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
             function () {
                 return self::$certificate;
             },
-            ['/^(foo|bar).example.com$/']
+            '/^(foo|bar).example.com$/'
         );
         $message = $this->getTestMessage([
             'SigningCertURL' => 'https://foo.example.com/baz.pem',

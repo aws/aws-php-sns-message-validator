@@ -15,13 +15,12 @@ class MessageValidator
      */
     private $certClient;
 
-    /** @var string[] */
-    private $hostNamePatterns;
+    /** @var string */
+    private $hostPattern;
 
-    /** @var array */
-    private static $defaultHostNamePatterns = [
-        '/^sns\.[a-zA-Z0-9\-]{3,}\.amazonaws\.com(\.cn)?$/'
-    ];
+    /** @var string */
+    private static $defaultHostPattern
+        = '/^sns\.[a-zA-Z0-9\-]{3,}\.amazonaws\.com(\.cn)?$/';
 
     /**
      * Constructs the Message Validator object and ensures that openssl is
@@ -30,17 +29,14 @@ class MessageValidator
      * @param callable $certClient Callable used to download the certificate.
      *                             Should have the following function signature:
      *                             `function (string $certUrl) : string $certContent`
-     * @param string[] $awsHostNamePatterns
+     * @param string $hostNamePattern
      */
     public function __construct(
         callable $certClient = null,
-        array $awsHostNamePatterns = []
+        $hostNamePattern = ''
     ) {
         $this->certClient = $certClient ?: 'file_get_contents';
-        $this->hostNamePatterns = array_merge(
-            $awsHostNamePatterns,
-            self::$defaultHostNamePatterns
-        );
+        $this->hostPattern = $hostNamePattern ?: self::$defaultHostPattern;
     }
 
     /**
@@ -142,21 +138,15 @@ class MessageValidator
     private function validateUrl($url)
     {
         $parsed = parse_url($url);
-        if (isset($parsed['scheme'])
-            && isset($parsed['host'])
-            && $parsed['scheme'] === 'https'
-            && substr($url, -4) === '.pem'
-
+        if (empty($parsed['scheme'])
+            || empty($parsed['host'])
+            || $parsed['scheme'] !== 'https'
+            || substr($url, -4) !== '.pem'
+            || !preg_match($this->hostPattern, $parsed['host'])
         ) {
-            foreach ($this->hostNamePatterns as $hostPattern) {
-                if (preg_match($hostPattern, $parsed['host'])) {
-                    return;
-                }
-            }
+            throw new InvalidSnsMessageException(
+                'The certificate is located on an invalid domain.'
+            );
         }
-
-        throw new InvalidSnsMessageException(
-            'The certificate is located on an invalid domain.'
-        );
     }
 }

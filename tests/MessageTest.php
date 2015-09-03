@@ -31,15 +31,42 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-    public function testFactorySucceedsWithGoodData()
+    public function testIterable()
     {
-        $this->assertInstanceOf('Aws\Sns\Message', new Message($this->messageData));
+        $message = new Message($this->messageData);
+
+        $this->assertInstanceOf('Traversable', $message);
+        foreach ($message as $key => $value) {
+            $this->assertTrue(isset($this->messageData[$key]));
+            $this->assertEquals($value, $this->messageData[$key]);
+        }
+    }
+
+    /**
+     * @dataProvider messageTypeProvider
+     *
+     * @param string $messageType
+     */
+    public function testConstructorSucceedsWithGoodData($messageType)
+    {
+        $this->assertInstanceOf('Aws\Sns\Message', new Message(
+            ['Type' => $messageType] + $this->messageData
+        ));
+    }
+
+    public function messageTypeProvider()
+    {
+        return [
+            ['Notification'],
+            ['SubscriptionConfirmation'],
+            ['UnsubscribeConfirmation'],
+        ];
     }
 
     /**
      * @expectedException \InvalidArgumentException
      */
-    public function testFactoryFailsWithNoType()
+    public function testConstructorFailsWithNoType()
     {
         $data = $this->messageData;
         unset($data['Type']);
@@ -49,9 +76,35 @@ class MessageTest extends \PHPUnit_Framework_TestCase
     /**
      * @expectedException \InvalidArgumentException
      */
-    public function testFactoryFailsWithMissingData()
+    public function testConstructorFailsWithMissingData()
     {
         new Message(['Type' => 'Notification']);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testRequiresTokenAndSubscribeUrlForSubscribeMessage()
+    {
+        new Message(
+            ['Type' => 'SubscriptionConfirmation'] + array_diff_key(
+                $this->messageData,
+                array_flip(['Token', 'SubscribeURL'])
+            )
+        );
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testRequiresTokenAndSubscribeUrlForUnsubscribeMessage()
+    {
+        new Message(
+            ['Type' => 'UnsubscribeConfirmation'] + array_diff_key(
+                $this->messageData,
+                array_flip(['Token', 'SubscribeURL'])
+            )
+        );
     }
 
     public function testCanCreateFromRawPost()
@@ -86,5 +139,17 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         $_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = 'Notification';
         Message::fromRawPostData();
         unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
+    }
+
+    public function testArrayAccess()
+    {
+        $message = new Message($this->messageData);
+
+        $this->assertInstanceOf('ArrayAccess', $message);
+        $message['foo'] = 'bar';
+        $this->assertTrue(isset($message['foo']));
+        $this->assertTrue($message['foo'] === 'bar');
+        unset($message['foo']);
+        $this->assertFalse(isset($message['foo']));
     }
 }

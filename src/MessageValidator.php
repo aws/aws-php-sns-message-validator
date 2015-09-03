@@ -15,16 +15,33 @@ class MessageValidator
      */
     private $certClient;
 
+    /** @var string */
+    private $hostPattern;
+
     /**
+     * @var string  A pattern that will match all regional SNS endpoints, e.g.:
+     *                  - sns.<region>.amazonaws.com        (AWS)
+     *                  - sns.us-gov-west-1.amazonaws.com   (AWS GovCloud)
+     *                  - sns.cn-north-1.amazonaws.com.cn   (AWS China)
+     */
+    private static $defaultHostPattern
+        = '/^sns\.[a-zA-Z0-9\-]{3,}\.amazonaws\.com(\.cn)?$/';
+
+    /**
+     * Constructs the Message Validator object and ensures that openssl is
+     * installed.
+     *
      * @param callable $certClient Callable used to download the certificate.
      *                             Should have the following function signature:
      *                             `function (string $certUrl) : string $certContent`
-     *
-     * @throws \RuntimeException If openssl is not installed
+     * @param string $hostNamePattern
      */
-    public function __construct(callable $certClient = null)
-    {
+    public function __construct(
+        callable $certClient = null,
+        $hostNamePattern = ''
+    ) {
         $this->certClient = $certClient ?: 'file_get_contents';
+        $this->hostPattern = $hostNamePattern ?: self::$defaultHostPattern;
     }
 
     /**
@@ -125,14 +142,12 @@ class MessageValidator
      */
     private function validateUrl($url)
     {
-        // The cert URL must be https, a .pem, and match the following pattern.
-        static $hostPattern = '/^sns\.[a-zA-Z0-9\-]{3,}\.amazonaws\.com(\.cn)?$/';
         $parsed = parse_url($url);
         if (empty($parsed['scheme'])
             || empty($parsed['host'])
             || $parsed['scheme'] !== 'https'
             || substr($url, -4) !== '.pem'
-            || !preg_match($hostPattern, $parsed['host'])
+            || !preg_match($this->hostPattern, $parsed['host'])
         ) {
             throw new InvalidSnsMessageException(
                 'The certificate is located on an invalid domain.'

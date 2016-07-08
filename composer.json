@@ -15,6 +15,9 @@
         "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
         "issues": "https://github.com/aws/aws-sns-message-validator/issues"
     },
+    "suggest": {
+        "aws/aws-sdk-php": "The official Amazon Web Services PHP SDK."
+    },
     "require": {
         "php": ">=5.4",
         "ext-openssl": "*"

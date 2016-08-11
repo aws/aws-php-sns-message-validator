@@ -94,7 +94,7 @@ try {
 } catch (InvalidSnsMessageException $e) {
    // Pretend we're not here if the message is invalid.
    http_response_code(404);
-   error_log('SNS Message Validation Error: ' . $e->getMessage);
+   error_log('SNS Message Validation Error: ' . $e->getMessage());
    die();
 }
 

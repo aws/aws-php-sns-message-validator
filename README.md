@@ -1,5 +1,7 @@
 # Amazon SNS Message Validator for PHP
 
+[![Join the chat at https://gitter.im/aws/aws-php-sns-message-validator](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/aws/aws-php-sns-message-validator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![@awsforphp on Twitter](http://img.shields.io/badge/twitter-%40awsforphp-blue.svg?style=flat)](https://twitter.com/awsforphp)
 [![Total Downloads](https://img.shields.io/packagist/dt/aws/aws-php-sns-message-validator.svg?style=flat)](https://packagist.org/packages/aws/aws-php-sns-message-validator)
 [![Build Status](https://img.shields.io/travis/aws/aws-php-sns-message-validator.svg?style=flat)](https://travis-ci.org/aws/aws-php-sns-message-validator)

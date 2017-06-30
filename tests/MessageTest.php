@@ -1,8 +1,10 @@
 <?php
 namespace Aws\Sns;
 
+use GuzzleHttp\Psr7\Request;
+
 /**
- * @covers Aws\Sns\Message
+ * @covers \Aws\Sns\Message
  */
 class MessageTest extends \PHPUnit_Framework_TestCase
 {
@@ -109,7 +111,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
 
     public function testCanCreateFromRawPost()
     {
-        $_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = 'Notification';
+        $_SERVER[Message::MESSAGE_TYPE_HEADER] = 'Notification';
 
         // Prep php://input with mocked data
         MockPhpStream::setStartingData(json_encode($this->messageData));
@@ -120,7 +122,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Aws\Sns\Message', $message);
 
         stream_wrapper_restore("php");
-        unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
+        unset($_SERVER[Message::MESSAGE_TYPE_HEADER]);
     }
 
     /**
@@ -136,9 +138,49 @@ class MessageTest extends \PHPUnit_Framework_TestCase
      */
     public function testCreateFromRawPostFailsWithMissingData()
     {
-        $_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = 'Notification';
+        $_SERVER[Message::MESSAGE_TYPE_HEADER] = 'Notification';
         Message::fromRawPostData();
-        unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
+        unset($_SERVER[Message::MESSAGE_TYPE_HEADER]);
+    }
+
+    public function testCanCreateFromPsr7Request()
+    {
+        $request = new Request(
+            'POST',
+            '/',
+            [Message::MESSAGE_TYPE_HEADER => ['foo']],
+            json_encode($this->messageData)
+        );
+        $message = Message::fromPsrRequest($request);
+        $this->assertInstanceOf('Aws\Sns\Message', $message);
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     */
+    public function testCreateFromPsr7RequestFailsWithMissingHeader()
+    {
+        $request = new Request(
+            'POST',
+            '/',
+            [],
+            json_encode($this->messageData)
+        );
+        Message::fromPsrRequest($request);
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     */
+    public function testCreateFromPsr7RequestFailsWithMissingData()
+    {
+        $request = new Request(
+            'POST',
+            '/',
+            [Message::MESSAGE_TYPE_HEADER => ['foo']],
+            'Not valid JSON'
+        );
+        Message::fromPsrRequest($request);
     }
 
     public function testArrayAccess()

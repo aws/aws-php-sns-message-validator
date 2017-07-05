@@ -158,20 +158,6 @@ class MessageTest extends \PHPUnit_Framework_TestCase
     /**
      * @expectedException \RuntimeException
      */
-    public function testCreateFromPsr7RequestFailsWithMissingHeader()
-    {
-        $request = new Request(
-            'POST',
-            '/',
-            [],
-            json_encode($this->messageData)
-        );
-        Message::fromPsrRequest($request);
-    }
-
-    /**
-     * @expectedException \RuntimeException
-     */
     public function testCreateFromPsr7RequestFailsWithMissingData()
     {
         $request = new Request(

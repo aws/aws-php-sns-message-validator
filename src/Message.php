@@ -49,10 +49,6 @@ class Message implements \ArrayAccess, \IteratorAggregate
      */
     public static function fromPsrRequest(RequestInterface $request)
     {
-        if ($request->getHeaderLine(self::MESSAGE_TYPE_HEADER) === '') {
-            throw new \RuntimeException('SNS message type header not provided.');
-        }
-
         return self::fromJsonString($request->getBody());
     }
 

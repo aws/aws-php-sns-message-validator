@@ -111,7 +111,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
 
     public function testCanCreateFromRawPost()
     {
-        $_SERVER[Message::MESSAGE_TYPE_HEADER] = 'Notification';
+        $_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = 'Notification';
 
         // Prep php://input with mocked data
         MockPhpStream::setStartingData(json_encode($this->messageData));
@@ -122,7 +122,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Aws\Sns\Message', $message);
 
         stream_wrapper_restore("php");
-        unset($_SERVER[Message::MESSAGE_TYPE_HEADER]);
+        unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
     }
 
     /**
@@ -138,9 +138,9 @@ class MessageTest extends \PHPUnit_Framework_TestCase
      */
     public function testCreateFromRawPostFailsWithMissingData()
     {
-        $_SERVER[Message::MESSAGE_TYPE_HEADER] = 'Notification';
+        $_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = 'Notification';
         Message::fromRawPostData();
-        unset($_SERVER[Message::MESSAGE_TYPE_HEADER]);
+        unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
     }
 
     public function testCanCreateFromPsr7Request()
@@ -148,7 +148,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         $request = new Request(
             'POST',
             '/',
-            [Message::MESSAGE_TYPE_HEADER => ['foo']],
+            [],
             json_encode($this->messageData)
         );
         $message = Message::fromPsrRequest($request);
@@ -163,7 +163,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         $request = new Request(
             'POST',
             '/',
-            [Message::MESSAGE_TYPE_HEADER => ['foo']],
+            [],
             'Not valid JSON'
         );
         Message::fromPsrRequest($request);

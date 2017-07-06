@@ -8,8 +8,6 @@ use Psr\Http\Message\RequestInterface;
  */
 class Message implements \ArrayAccess, \IteratorAggregate
 {
-    const MESSAGE_TYPE_HEADER = 'HTTP_X_AMZ_SNS_MESSAGE_TYPE';
-
     private static $requiredKeys = [
         'Message',
         'MessageId',
@@ -33,7 +31,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
     public static function fromRawPostData()
     {
         // Make sure the SNS-provided header exists.
-        if (!isset($_SERVER[self::MESSAGE_TYPE_HEADER])) {
+        if (!isset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'])) {
             throw new \RuntimeException('SNS message type header not provided.');
         }
 

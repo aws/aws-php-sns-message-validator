@@ -1,8 +1,10 @@
 <?php
 namespace Aws\Sns;
 
+use GuzzleHttp\Psr7\Request;
+
 /**
- * @covers Aws\Sns\Message
+ * @covers \Aws\Sns\Message
  */
 class MessageTest extends \PHPUnit_Framework_TestCase
 {
@@ -139,6 +141,32 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         $_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = 'Notification';
         Message::fromRawPostData();
         unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
+    }
+
+    public function testCanCreateFromPsr7Request()
+    {
+        $request = new Request(
+            'POST',
+            '/',
+            [],
+            json_encode($this->messageData)
+        );
+        $message = Message::fromPsrRequest($request);
+        $this->assertInstanceOf('Aws\Sns\Message', $message);
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     */
+    public function testCreateFromPsr7RequestFailsWithMissingData()
+    {
+        $request = new Request(
+            'POST',
+            '/',
+            [],
+            'Not valid JSON'
+        );
+        Message::fromPsrRequest($request);
     }
 
     public function testArrayAccess()

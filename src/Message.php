@@ -1,6 +1,8 @@
 <?php
 namespace Aws\Sns;
 
+use Psr\Http\Message\RequestInterface;
+
 /**
  * Represents an SNS message received over http(s).
  */
@@ -21,7 +23,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
     private $data;
 
     /**
-     * Creates a message object from the raw POST data
+     * Creates a Message object from the raw POST data
      *
      * @return Message
      * @throws \RuntimeException If the POST data is absent, or not a valid JSON document
@@ -33,8 +35,30 @@ class Message implements \ArrayAccess, \IteratorAggregate
             throw new \RuntimeException('SNS message type header not provided.');
         }
 
-        // Read the raw POST data and JSON-decode it.
-        $data = json_decode(file_get_contents('php://input'), true);
+        // Read the raw POST data and JSON-decode it into a message.
+        return self::fromJsonString(file_get_contents('php://input'));
+    }
+
+    /**
+     * Creates a Message object from a PSR-7 Request or ServerRequest object.
+     *
+     * @param RequestInterface $request
+     * @return Message
+     */
+    public static function fromPsrRequest(RequestInterface $request)
+    {
+        return self::fromJsonString($request->getBody());
+    }
+
+    /**
+     * Creates a Message object from a JSON-decodable string.
+     *
+     * @param string $requestBody
+     * @return Message
+     */
+    private static function fromJsonString($requestBody)
+    {
+        $data = json_decode($requestBody, true);
         if (JSON_ERROR_NONE !== json_last_error() || !is_array($data)) {
             throw new \RuntimeException('Invalid POST data.');
         }

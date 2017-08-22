@@ -14,4 +14,8 @@ dist: trusty
 install:
   - travis_retry composer update --no-interaction --prefer-dist
 
+matrix:
+  allow_failures:
+    - php: 5.4
+
 script: vendor/bin/phpunit

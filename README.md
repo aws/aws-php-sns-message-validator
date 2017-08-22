@@ -127,7 +127,9 @@ Unsubscribing looks the same as subscribing, except the message type will be
 
 ```php
 if ($message['Type'] === 'UnsubscribeConfirmation') {
-   file_get_contents($message['SubscribeURL']);
+    // Unsubscribed in error? You can resubscribe by visiting the endpoint
+    // provided as the message's SubscribeURL field.
+    file_get_contents($message['SubscribeURL']);
 }
 ```
 

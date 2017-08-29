@@ -15,8 +15,13 @@ class Message implements \ArrayAccess, \IteratorAggregate
         'TopicArn',
         'Type',
         'Signature',
-        'SigningCertURL',
+        ['SigningCertURL', 'SigningCertUrl'],
         'SignatureVersion',
+    ];
+
+    private static $subscribeKeys = [
+        ['SubscribeURL', 'SubscribeUrl'],
+        'Token'
     ];
 
     /** @var array The message data */
@@ -81,7 +86,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
         if ($data['Type'] === 'SubscriptionConfirmation'
             || $data['Type'] === 'UnsubscribeConfirmation'
         ) {
-            $this->validateRequiredKeys($data, ['SubscribeURL', 'Token']);
+            $this->validateRequiredKeys($data, self::$subscribeKeys);
         }
 
         $this->data = $data;
@@ -125,7 +130,23 @@ class Message implements \ArrayAccess, \IteratorAggregate
     private function validateRequiredKeys(array $data, array $keys)
     {
         foreach ($keys as $key) {
-            if (!isset($data[$key])) {
+            $keyIsArray = is_array($key);
+            if (!$keyIsArray) {
+                $found = isset($data[$key]);
+            } else {
+                $found = false;
+                foreach ($key as $keyOption) {
+                    if (isset($data[$keyOption])) {
+                        $found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$found) {
+                if ($keyIsArray) {
+                    $key = $key[0];
+                }
                 throw new \InvalidArgumentException(
                     "\"{$key}\" is required to verify the SNS Message."
                 );

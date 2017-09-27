@@ -98,7 +98,7 @@ class MessageValidator
         // Verify the signature of the message.
         $content = $this->getStringToSign($message);
         $signature = base64_decode($message['Signature']);
-        if (!openssl_verify($content, $signature, $key, OPENSSL_ALGO_SHA1)) {
+        if (openssl_verify($content, $signature, $key, OPENSSL_ALGO_SHA1) != 1) {
             throw new InvalidSnsMessageException(
                 'The message signature is invalid.'
             );

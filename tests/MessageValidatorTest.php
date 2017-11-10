@@ -1,10 +1,12 @@
 <?php
 namespace Aws\Sns;
 
+use PHPUnit\Framework\TestCase;
+
 /**
  * @covers Aws\Sns\MessageValidator
  */
-class MessageValidatorTest extends \PHPUnit_Framework_TestCase
+class MessageValidatorTest extends TestCase
 {
     const VALID_CERT_URL = 'https://sns.foo.amazonaws.com/bar.pem';
 

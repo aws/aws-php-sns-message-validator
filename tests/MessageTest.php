@@ -2,11 +2,12 @@
 namespace Aws\Sns;
 
 use GuzzleHttp\Psr7\Request;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \Aws\Sns\Message
  */
-class MessageTest extends \PHPUnit_Framework_TestCase
+class MessageTest extends TestCase
 {
     public $messageData = array(
         'Message' => 'a',

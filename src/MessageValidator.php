@@ -86,6 +86,11 @@ class MessageValidator
         // Get the certificate.
         $this->validateUrl($message['SigningCertURL']);
         $certificate = call_user_func($this->certClient, $message['SigningCertURL']);
+        if ($certificate === false) {
+            throw new InvalidSnsMessageException(
+                "Cannot get the certificate from \"{$message['SigningCertURL']}\"."
+            );
+        }
 
         // Extract the public key.
         $key = openssl_get_publickey($certificate);

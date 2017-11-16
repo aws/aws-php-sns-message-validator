@@ -90,6 +90,17 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
+     * @expectedExceptionMessageRegExp /Cannot get the certificate from ".+"./
+     */
+    public function testValidateFailsWhenCannotGetCertificate()
+    {
+        $validator = new MessageValidator($this->getMockHttpClient(false));
+        $message = $this->getTestMessage();
+        $validator->validate($message);
+    }
+
+    /**
+     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
      * @expectedExceptionMessage Cannot get the public key from the certificate.
      */
     public function testValidateFailsWhenCannotDeterminePublicKey()

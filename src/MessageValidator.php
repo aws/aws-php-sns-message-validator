@@ -181,14 +181,40 @@ class MessageValidator
     private function validateUrl($url)
     {
         $parsed = parse_url($url);
-        if (empty($parsed['scheme'])
-            || empty($parsed['host'])
-            || (!$this->allowHttp && $parsed['scheme'] !== 'https')
-            || substr($url, -4) !== '.pem'
-            || !preg_match($this->hostPattern, $parsed['host'])
-        ) {
+
+        if (empty($parsed['scheme']) || empty($parsed['host'])) {
             throw new InvalidSnsMessageException(
-                'The certificate is located on an invalid domain.'
+                sprintf(
+                    'The certificate is located on an invalid domain. (%s)',
+                    '(Could not parse URL)'
+                )
+            );
+        }
+
+        if (!$this->allowHttp && $parsed['scheme'] !== 'https') {
+            throw new InvalidSnsMessageException(
+                sprintf(
+                    'The certificate is located on an invalid domain. (%s)',
+                    '(URL is not served via HTTPS)'
+                )
+            );
+        }
+
+        if (substr($url, -4) !== '.pem') {
+            throw new InvalidSnsMessageException(
+                sprintf(
+                    'The certificate is located on an invalid domain. (%s)',
+                    '(Certificate is not in .pem format)'
+                )
+            );
+        }
+
+        if (!preg_match($this->hostPattern, $parsed['host'])) {
+            throw new InvalidSnsMessageException(
+                sprintf(
+                    'The certificate is located on an invalid domain. (%s)',
+                    '(Host does not match host pattern)'
+                )
             );
         }
     }

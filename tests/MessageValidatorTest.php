@@ -158,20 +158,30 @@ STRINGTOSIGN;
         );
     }
 
+    public function testAllowsHttpIfAllowHttpIsTrue()
+    {
+        $sigUrl = 'http://sns.foo.amazonaws.com/bar.pem';
+        $validator = new MessageValidator($this->getMockCertServerClient($sigUrl), '', true);
+        $message = $this->getTestMessage([], $sigUrl);
+        $message['Signature'] = $this->getSignature($validator->getStringToSign($message));
+        $this->assertTrue($validator->isValid($message));
+    }
+
     /**
      * @param array $customData
      *
      * @return Message
      */
-    private function getTestMessage(array $customData = [])
+    private function getTestMessage(array $customData = [], $sigUrl = null)
     {
+        $sigUrl = $sigUrl ?: self::VALID_CERT_URL;
         return new Message($customData + [
             'Message'          => 'foo',
             'MessageId'        => 'bar',
             'Timestamp'        => time(),
             'TopicArn'         => 'baz',
             'Type'             => 'Notification',
-            'SigningCertURL'   => self::VALID_CERT_URL,
+            'SigningCertURL'   => $sigUrl,
             'Signature'        => true,
             'SignatureVersion' => '1',
         ]);
@@ -184,10 +194,11 @@ STRINGTOSIGN;
         };
     }
 
-    private function getMockCertServerClient()
+    private function getMockCertServerClient($sigUrl = null)
     {
-        return function ($url) {
-            if ($url !== self::VALID_CERT_URL) {
+        $sigUrl = $sigUrl ?: self::VALID_CERT_URL;
+        return function ($url) use ($sigUrl) {
+            if ($url !== $sigUrl) {
                 return '';
             }
 

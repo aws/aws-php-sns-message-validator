@@ -18,6 +18,9 @@ class MessageValidator
     /** @var string */
     private $hostPattern;
 
+    /** @var boolean */
+    private $allowHttp;
+
     /**
      * @var string  A pattern that will match all regional SNS endpoints, e.g.:
      *                  - sns.<region>.amazonaws.com        (AWS)
@@ -62,10 +65,12 @@ class MessageValidator
      */
     public function __construct(
         callable $certClient = null,
-        $hostNamePattern = ''
+        $hostNamePattern = '',
+        $allowHttp = false
     ) {
         $this->certClient = $certClient ?: 'file_get_contents';
         $this->hostPattern = $hostNamePattern ?: self::$defaultHostPattern;
+        $this->allowHttp = $allowHttp;
     }
 
     /**
@@ -178,7 +183,7 @@ class MessageValidator
         $parsed = parse_url($url);
         if (empty($parsed['scheme'])
             || empty($parsed['host'])
-            || $parsed['scheme'] !== 'https'
+            || (!$this->allowHttp && $parsed['scheme'] !== 'https')
             || substr($url, -4) !== '.pem'
             || !preg_match($this->hostPattern, $parsed['host'])
         ) {

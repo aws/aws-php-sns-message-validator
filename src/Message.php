@@ -61,7 +61,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
      * @param string $requestBody
      * @return Message
      */
-    private static function fromJsonString($requestBody)
+    public static function fromJsonString($requestBody)
     {
         $data = json_decode($requestBody, true);
         if (JSON_ERROR_NONE !== json_last_error() || !is_array($data)) {

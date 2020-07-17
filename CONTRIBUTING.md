@@ -3,45 +3,109 @@
 Thank you for your interest in contributing to our project. Whether it's a bug report, new feature, correction, or additional 
 documentation, we greatly value feedback and contributions from our community.
 
-Please read through this document before submitting any issues or pull requests to ensure we have all the necessary 
+Please read through this document before submitting any [issues][] or [pull requests][pull-requests] to ensure we have all the necessary 
 information to effectively respond to your bug report or contribution.
 
+Jump To:
 
-## Reporting Bugs/Feature Requests
-
-We welcome you to use the GitHub issue tracker to report bugs or suggest features.
-
-When filing an issue, please check [existing open](https://github.com/aws/aws-php-sns-message-validator/issues), or [recently closed](https://github.com/aws/aws-php-sns-message-validator/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aclosed%20), issues to make sure somebody else hasn't already 
-reported the issue. Please try to include as much information as you can. Details like these are incredibly useful:
-
-* A reproducible test case or series of steps
-* The version of our code being used
-* Any modifications you've made relevant to the bug
-* Anything unusual about your environment or deployment
+* [Bug Reports](_#Bug-Reports_)
+* [Feature Requests](_#Feature-Requests_)
+* [Code Contributions](_#Code-Contributions_)
+* [Code of Conduct](_#Code-of-Conduct_)
+* [Security issue notifications](_#Security-issue-notifications_)
+* [Licensing](_#Licensing_)
 
 
-## Contributing via Pull Requests
-Contributions via pull requests are much appreciated. Before sending us a pull request, please ensure that:
 
-1. You are working against the latest source on the *master* branch.
-2. You check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
-3. You open an issue to discuss any significant work - we would hate for your time to be wasted.
+## How to contribute
 
-To send us a pull request, please:
+*Before you send us a pull request, please be sure that:*
+
+1. You're working from the latest source on the master branch.
+1. You check existing open, and recently closed, pull requests to be sure that 
+   someone else hasn't already addressed the problem.
+1. You create an issue before working on a contribution that will take a significant 
+   amount of your time.
+
+*Creating a Pull Request*
 
 1. Fork the repository.
-2. Modify the source; please focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
-3. Ensure local tests pass.
-4. Commit to your fork using clear commit messages.
-5. Send us a pull request, answering any default questions in the pull request interface.
-6. Pay attention to any automated CI failures reported in the pull request, and stay involved in the conversation.
+1. In your fork, make your change in a branch that's based on this repo's master branch.
+1. Commit the change to your fork, using a clear and descriptive commit message.
+1. Create a pull request, answering any questions in the pull request form.
+
+For contributions that will take a significant amount of time, open a new issue to pitch 
+your idea before you get started. Explain the problem and describe the content you want to 
+see added to the documentation. Let us know if you'll write it yourself or if you'd like us 
+to help. We'll discuss your proposal with you and let you know whether we're likely to 
+accept it.   
 
 GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and 
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
 
 
-## Finding contributions to work on
-Looking at the existing issues is a great way to find something to contribute on. As our projects, by default, use the default GitHub issue labels ((enhancement/bug/duplicate/help wanted/invalid/question/wontfix), looking at any ['help wanted'](https://github.com/aws/aws-php-sns-message-validator/labels/help%20wanted) issues is a great place to start. 
+## Bug Reports
+
+Bug reports are accepted through the [Issues][] page.
+
+Before Submitting:
+
+* Do a search through the existing issues to make sure it has not already been reported. 
+   If it has, comment your experience or +1 so we prioritize it.
+* If possible, upgrade to the latest release of the SDK. It's possible the bug has 
+   already been fixed in the latest version.
+
+Writing the Bug Report:
+
+Please ensure that your bug report has the following:
+
+* A short, descriptive title. Ideally, other community members should be able to get a 
+   good idea of the issue just from reading the title.
+* A detailed description of the problem you're experiencing. This should include:
+    * Expected behavior of the SDK and the actual behavior exhibited.
+    * Any details of your application environment that may be relevant.
+    * Debug information, stack trace or logs.
+*  If you are able to create one, include a Minimal Working Example that reproduces the issue.
+* Use Markdown to make the report easier to read; i.e. use code blocks when pasting a 
+   code snippet.
+
+## Feature Requests:
+
+Open an [issue][] with the following:
+
+* A short, descriptive title. Ideally, other community members should be able to get a 
+   good idea of the feature just from reading the title.
+* A detailed description of the the proposed feature. 
+    * Why it should be added to the SDK.
+    *  If possible, example code to illustrate how it should work.
+* Use Markdown to make the request easier to read;
+* If you intend to implement this feature, indicate that you'd like to the issue to be
+   assigned to you.
+
+## Bug Reports
+
+Bug reports are accepted through the [Issues][] page.
+
+Before Submitting:
+
+* Do a search through the existing issues to make sure it has not already been reported. 
+   If it has, comment your experience or +1 so we prioritize it.
+* If possible, upgrade to the latest release of the SDK. It's possible the bug has 
+   already been fixed in the latest version.
+
+Writing the Bug Report:
+
+Please ensure that your bug report has the following:
+
+* A short, descriptive title. Ideally, other community members should be able to get a 
+   good idea of the issue just from reading the title.
+* A detailed description of the problem you're experiencing. This should include:
+    * Expected behavior of the SDK and the actual behavior exhibited.
+    * Any details of your application environment that may be relevant.
+    * Debug information, stack trace or logs.
+*  If you are able to create one, include a Minimal Working Example that reproduces the issue.
+* Use Markdown to make the report easier to read; i.e. use code blocks when pasting a 
+   code snippet.
 
 
 ## Code of Conduct

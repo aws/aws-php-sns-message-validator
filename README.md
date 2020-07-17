@@ -10,6 +10,14 @@ incoming HTTP(S) POST messages are valid Amazon SNS notifications. This library
 is standalone and does not depend on the AWS SDK for PHP or Guzzle; however, it
 does require PHP 5.4+ and that the OpenSSL PHP extension is installed.
 
+Jump To:
+* [Basic Usage](_#Basic-Usage_)
+* [Installation](_#Installation_)
+* [About Amazon SNS](_#About-Amazon-SNS_)
+* [Handling Messages](_#Handling-Messages_)
+* [Testing Locally](_#Testing-Locally_)
+* [Contributing](_#Contributing_)
+
 ## Basic Usage
 
 To validate a message, you can instantiate a `Message` object from the POST
@@ -44,6 +52,15 @@ if ($validator->isValid($message)) {
 The SNS Message Validator can be installed via [Composer][].
 
     $ composer require aws/aws-php-sns-message-validator
+
+## Getting Help
+
+Please use these community resources for getting help. We use the GitHub issues for tracking bugs and feature requests and have limited bandwidth to address them.
+
+* Ask a question on [StackOverflow](https://stackoverflow.com/) and tag it with [`aws-php-sdk`](http://stackoverflow.com/questions/tagged/aws-php-sdk)
+* Come join the AWS SDK for PHP [gitter](https://gitter.im/aws/aws-sdk-php)
+* Open a support ticket with [AWS Support](https://console.aws.amazon.com/support/home/)
+* If it turns out that you may have found a bug, please [open an issue](https://github.com/aws/aws-php-sns-message-validator/issues/new/choose)
 
 ## About Amazon SNS
 
@@ -156,3 +173,7 @@ implementation][] in Version 2 of the [AWS SDK for PHP][].
 [Julian Vidal]: https://github.com/poisa
 [initial implementation]: https://github.com/aws/aws-sdk-php/tree/2.8/src/Aws/Sns/MessageValidator
 [AWS SDK for PHP]: https://github.com/aws/aws-sdk-php
+
+## Contributing
+
+We work hard to provide a high-quality and useful SDK for our AWS services, and we greatly value feedback and contributions from our community. Please review our [contributing guidelines](./CONTRIBUTING.md) before submitting any issues or pull requests to ensure we have all the necessary information to effectively respond to your bug report or contribution.

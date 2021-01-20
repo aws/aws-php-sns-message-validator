@@ -158,15 +158,6 @@ STRINGTOSIGN;
         );
     }
 
-    public function testAllowsHttpIfAllowHttpIsTrue()
-    {
-        $sigUrl = 'http://sns.foo.amazonaws.com/bar.pem';
-        $validator = new MessageValidator($this->getMockCertServerClient($sigUrl), '', true);
-        $message = $this->getTestMessage([], $sigUrl);
-        $message['Signature'] = $this->getSignature($validator->getStringToSign($message));
-        $this->assertTrue($validator->isValid($message));
-    }
-
     /**
      * @param array $customData
      *

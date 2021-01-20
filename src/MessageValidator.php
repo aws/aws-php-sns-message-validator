@@ -19,9 +19,6 @@ class MessageValidator
     private $hostPattern;
 
     /** @var boolean */
-    private $allowHttp;
-
-    /** @var boolean */
     private $bypassValidation;
 
     /**
@@ -69,12 +66,10 @@ class MessageValidator
     public function __construct(
         callable $certClient = null,
         $hostNamePattern = '',
-        $allowHttp = false,
         $bypassValidation = false
     ) {
         $this->certClient = $certClient ?: 'file_get_contents';
         $this->hostPattern = $hostNamePattern ?: self::$defaultHostPattern;
-        $this->allowHttp = $allowHttp;
         $this->bypassValidation = $bypassValidation;
     }
 
@@ -196,15 +191,6 @@ class MessageValidator
                 sprintf(
                     'The certificate is located on an invalid domain. (%s)',
                     '(Could not parse URL)'
-                )
-            );
-        }
-
-        if (!$this->allowHttp && $parsed['scheme'] !== 'https') {
-            throw new InvalidSnsMessageException(
-                sprintf(
-                    'The certificate is located on an invalid domain. (%s)',
-                    '(URL is not served via HTTPS)'
                 )
             );
         }

@@ -21,6 +21,9 @@ class MessageValidator
     /** @var boolean */
     private $allowHttp;
 
+    /** @var boolean */
+    private $bypassValidation;
+
     /**
      * @var string  A pattern that will match all regional SNS endpoints, e.g.:
      *                  - sns.<region>.amazonaws.com        (AWS)
@@ -66,11 +69,13 @@ class MessageValidator
     public function __construct(
         callable $certClient = null,
         $hostNamePattern = '',
-        $allowHttp = false
+        $allowHttp = false,
+        $bypassValidation = false
     ) {
         $this->certClient = $certClient ?: 'file_get_contents';
         $this->hostPattern = $hostNamePattern ?: self::$defaultHostPattern;
         $this->allowHttp = $allowHttp;
+        $this->bypassValidation = $bypassValidation;
     }
 
     /**
@@ -125,6 +130,10 @@ class MessageValidator
      */
     public function isValid(Message $message)
     {
+        if ($this->bypassValidation) {
+            return true;
+        }
+
         try {
             $this->validate($message);
             return true;

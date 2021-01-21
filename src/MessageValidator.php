@@ -84,6 +84,10 @@ class MessageValidator
      */
     public function validate(Message $message)
     {
+        if ($this->bypassValidation) {
+            return;
+        }
+
         if (self::isLambdaStyle($message)) {
             $message = self::convertLambdaMessage($message);
         }
@@ -125,10 +129,6 @@ class MessageValidator
      */
     public function isValid(Message $message)
     {
-        if ($this->bypassValidation) {
-            return true;
-        }
-
         try {
             $this->validate($message);
             return true;

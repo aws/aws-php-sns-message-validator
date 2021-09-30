@@ -92,7 +92,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
         $this->data = $data;
     }
 
-    public function getIterator(): Traversable
+    public function getIterator(): \Traversable
     {
         return new \ArrayIterator($this->data);
     }

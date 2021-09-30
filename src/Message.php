@@ -114,7 +114,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
         $this->data[$key] = $value;
     }
 
-    public function offsetUnset($key)
+    public function offsetUnset($key): void
     {
         unset($this->data[$key]);
     }

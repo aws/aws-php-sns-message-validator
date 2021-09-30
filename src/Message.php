@@ -108,6 +108,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
         return isset($this->data[$key]) ? $this->data[$key] : null;
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetSet($key, $value)
     {
         $this->data[$key] = $value;

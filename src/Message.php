@@ -97,7 +97,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
         return new \ArrayIterator($this->data);
     }
 
-    public function offsetExists($key)
+    public function offsetExists($key): bool
     {
         return isset($this->data[$key]);
     }

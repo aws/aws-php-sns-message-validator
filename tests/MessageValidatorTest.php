@@ -36,13 +36,13 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
-     * @expectedExceptionMessage The SignatureVersion "2" is not supported.
+     * @expectedExceptionMessage The SignatureVersion "3" is not supported.
      */
     public function testValidateFailsWhenSignatureVersionIsInvalid()
     {
         $validator = new MessageValidator($this->getMockCertServerClient());
         $message = $this->getTestMessage([
-            'SignatureVersion' => '2',
+            'SignatureVersion' => '3',
         ]);
         $validator->validate($message);
     }
@@ -123,6 +123,21 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         $validator->validate($message);
     }
 
+        /**
+         * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
+         * @expectedExceptionMessage The message signature is invalid.
+         */
+        public function testValidateFailsWhenSha256MessageIsInvalid()
+        {
+            $validator = new MessageValidator($this->getMockCertServerClient());
+            $message = $this->getTestMessage([
+                'Signature' => $this->getSignature('foo'),
+                 'SignatureVersion' => '2'
+
+            ]);
+            $validator->validate($message);
+        }
+
     public function testValidateSucceedsWhenMessageIsValid()
     {
         $validator = new MessageValidator($this->getMockCertServerClient());
@@ -130,6 +145,20 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
 
         // Get the signature for a real message
         $message['Signature'] = $this->getSignature($validator->getStringToSign($message));
+
+        // The message should validate
+        $this->assertTrue($validator->isValid($message));
+    }
+
+    public function testValidateSucceedsWhenSha256MessageIsValid()
+    {
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message = $this->getTestMessage([
+            'SignatureVersion' => '2'
+        ]);
+
+        // Get the signature for a real message
+        $message['Signature'] = $this->getSignature($validator->getStringToSign($message), '2');
 
         // The message should validate
         $this->assertTrue($validator->isValid($message));
@@ -195,9 +224,13 @@ STRINGTOSIGN;
         };
     }
 
-    private function getSignature($stringToSign)
+    private function getSignature($stringToSign, $algo = '1')
     {
-        openssl_sign($stringToSign, $signature, self::$pKey);
+        if ($algo === '2') {
+            openssl_sign($stringToSign, $signature, self::$pKey, 'SHA256');
+        } else {
+            openssl_sign($stringToSign, $signature, self::$pKey);
+        }
 
         return base64_encode($signature);
     }

@@ -107,7 +107,7 @@ class MessageValidator
         $content = $this->getStringToSign($message);
         $signature = base64_decode($message['Signature']);
         $algo = ($message['SignatureVersion'] === self::SIGNATURE_VERSION_1 ? OPENSSL_ALGO_SHA1 : OPENSSL_ALGO_SHA256);
-        if (openssl_verify($content, $signature, $key, $algo) != 1) {
+        if (openssl_verify($content, $signature, $key, $algo) !== 1) {
             throw new InvalidSnsMessageException(
                 'The message signature is invalid.'
             );
@@ -153,8 +153,8 @@ class MessageValidator
             'Type',
         ];
 
-        if ($message['SignatureVersion'] !== self::SIGNATURE_VERSION_1 and
-            $message['SignatureVersion'] !== self::SIGNATURE_VERSION_2) {
+        if ($message['SignatureVersion'] !== self::SIGNATURE_VERSION_1
+            && $message['SignatureVersion'] !== self::SIGNATURE_VERSION_2) {
             throw new InvalidSnsMessageException(
                 "The SignatureVersion \"{$message['SignatureVersion']}\" is not supported."
             );

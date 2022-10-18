@@ -17,8 +17,7 @@
     },
     "require": {
         "php": ">=5.4",
-        "ext-openssl": "*",
-        "psr/http-message": "^1.0"
+        "ext-openssl": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "^4.0",

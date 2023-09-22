@@ -96,7 +96,8 @@ class MessageValidator
         }
 
         // Extract the public key.
-        $key = openssl_get_publickey($certificate);
+        $certificateContent = file_get_contents($certificate);
+        $key = openssl_get_publickey($certificateContent);
         if (!$key) {
             throw new InvalidSnsMessageException(
                 'Cannot get the public key from the certificate.'

@@ -2,11 +2,12 @@
 namespace Aws\Sns;
 
 use GuzzleHttp\Psr7\Request;
+use Yoast\PHPUnitPolyfills\TestCases\TestCase;
 
 /**
  * @covers \Aws\Sns\Message
  */
-class MessageTest extends \PHPUnit_Framework_TestCase
+class MessageTest extends TestCase
 {
     public $messageData = array(
         'Message' => 'a',
@@ -25,7 +26,7 @@ class MessageTest extends \PHPUnit_Framework_TestCase
     public function testGetters()
     {
         $message = new Message($this->messageData);
-        $this->assertInternalType('array', $message->toArray());
+        $this->assertIsArray($message->toArray());
 
         foreach ($this->messageData as $key => $expectedValue) {
             $this->assertTrue(isset($message[$key]));
@@ -65,29 +66,23 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         ];
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testConstructorFailsWithNoType()
     {
+        $this->expectException(\InvalidArgumentException::class);
         $data = $this->messageData;
         unset($data['Type']);
         new Message($data);
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testConstructorFailsWithMissingData()
     {
+        $this->expectException(\InvalidArgumentException::class);
         new Message(['Type' => 'Notification']);
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testRequiresTokenAndSubscribeUrlForSubscribeMessage()
     {
+        $this->expectException(\InvalidArgumentException::class);
         new Message(
             ['Type' => 'SubscriptionConfirmation'] + array_diff_key(
                 $this->messageData,
@@ -96,11 +91,9 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testRequiresTokenAndSubscribeUrlForUnsubscribeMessage()
     {
+        $this->expectException(\InvalidArgumentException::class);
         new Message(
             ['Type' => 'UnsubscribeConfirmation'] + array_diff_key(
                 $this->messageData,
@@ -125,19 +118,15 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
     }
 
-    /**
-     * @expectedException \RuntimeException
-     */
     public function testCreateFromRawPostFailsWithMissingHeader()
     {
+        $this->expectException(\RuntimeException::class);
         Message::fromRawPostData();
     }
 
-    /**
-     * @expectedException \RuntimeException
-     */
     public function testCreateFromRawPostFailsWithMissingData()
     {
+        $this->expectException(\RuntimeException::class);
         $_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = 'Notification';
         Message::fromRawPostData();
         unset($_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE']);
@@ -155,11 +144,9 @@ class MessageTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Aws\Sns\Message', $message);
     }
 
-    /**
-     * @expectedException \RuntimeException
-     */
     public function testCreateFromPsr7RequestFailsWithMissingData()
     {
+        $this->expectException(\RuntimeException::class);
         $request = new Request(
             'POST',
             '/',

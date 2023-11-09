@@ -16,14 +16,16 @@
         "issues": "https://github.com/aws/aws-sns-message-validator/issues"
     },
     "require": {
-        "php": ">=5.4",
+        "php": ">=7.2.5",
         "ext-openssl": "*",
-        "psr/http-message": "^1.0"
+        "psr/http-message": "^1.0 || ^2.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^4.0",
+        "phpunit/phpunit": "^5.6.3 || ^8.5 || ^9.5",
         "squizlabs/php_codesniffer": "^2.3",
-        "guzzlehttp/psr7": "^1.4"
+        "guzzlehttp/psr7": "^1.9.1 || ^2.4.5",
+        "yoast/phpunit-polyfills": "^1.0"
+
     },
     "autoload": {
         "psr-4": { "Aws\\Sns\\": "src/" }

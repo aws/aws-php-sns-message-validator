@@ -1,17 +1,20 @@
 <?php
 namespace Aws\Sns;
 
+use Aws\Sns\Exception\InvalidSnsMessageException;
+use Yoast\PHPUnitPolyfills\TestCases\TestCase;
+
 /**
  * @covers Aws\Sns\MessageValidator
  */
-class MessageValidatorTest extends \PHPUnit_Framework_TestCase
+class MessageValidatorTest extends TestCase
 {
     const VALID_CERT_URL = 'https://sns.foo.amazonaws.com/bar.pem';
 
     private static $pKey;
     private static $certificate;
 
-    public static function setUpBeforeClass()
+    public static function set_up_before_class()
     {
         self::$pKey = openssl_pkey_new();
         $csr = openssl_csr_new([], self::$pKey);
@@ -20,7 +23,7 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         openssl_x509_free($x509);
     }
 
-    public static function tearDownAfterClass()
+    public static function tear_down_after_class()
     {
         openssl_pkey_free(self::$pKey);
     }
@@ -34,12 +37,10 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($validator->isValid($message));
     }
 
-    /**
-     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
-     * @expectedExceptionMessage The SignatureVersion "3" is not supported.
-     */
     public function testValidateFailsWhenSignatureVersionIsInvalid()
     {
+        $this->expectException(InvalidSnsMessageException::class);
+        $this->expectExceptionMessage('The SignatureVersion "3" is not supported.');
         $validator = new MessageValidator($this->getMockCertServerClient());
         $message = $this->getTestMessage([
             'SignatureVersion' => '3',
@@ -47,12 +48,10 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         $validator->validate($message);
     }
 
-    /**
-     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
-     * @expectedExceptionMessage The certificate is located on an invalid domain.
-     */
     public function testValidateFailsWhenCertUrlInvalid()
     {
+        $this->expectException(InvalidSnsMessageException::class);
+        $this->expectExceptionMessage('The certificate is located on an invalid domain.');
         $validator = new MessageValidator();
         $message = $this->getTestMessage([
             'SigningCertURL' => 'https://foo.amazonaws.com/bar.pem',
@@ -60,12 +59,10 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         $validator->validate($message);
     }
 
-    /**
-     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
-     * @expectedExceptionMessage The certificate is located on an invalid domain.
-     */
     public function testValidateFailsWhenCertUrlNotAPemFile()
     {
+        $this->expectException(InvalidSnsMessageException::class);
+        $this->expectExceptionMessage('The certificate is located on an invalid domain.');
         $validator = new MessageValidator();
         $message = $this->getTestMessage([
             'SigningCertURL' => 'https://foo.amazonaws.com/bar',
@@ -88,34 +85,28 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($validator->isValid($message));
     }
 
-    /**
-     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
-     * @expectedExceptionMessageRegExp /Cannot get the certificate from ".+"./
-     */
     public function testValidateFailsWhenCannotGetCertificate()
     {
+        $this->expectException(InvalidSnsMessageException::class);
+        $this->expectDeprecationMessageMatches('/Cannot get the certificate from ".+"./');
         $validator = new MessageValidator($this->getMockHttpClient(false));
         $message = $this->getTestMessage();
         $validator->validate($message);
     }
 
-    /**
-     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
-     * @expectedExceptionMessage Cannot get the public key from the certificate.
-     */
     public function testValidateFailsWhenCannotDeterminePublicKey()
     {
+        $this->expectException(InvalidSnsMessageException::class);
+        $this->expectExceptionMessage('Cannot get the public key from the certificate.');
         $validator = new MessageValidator($this->getMockHttpClient());
         $message = $this->getTestMessage();
         $validator->validate($message);
     }
 
-    /**
-     * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
-     * @expectedExceptionMessage The message signature is invalid.
-     */
     public function testValidateFailsWhenMessageIsInvalid()
     {
+        $this->expectException(InvalidSnsMessageException::class);
+        $this->expectExceptionMessage('The message signature is invalid.');
         $validator = new MessageValidator($this->getMockCertServerClient());
         $message = $this->getTestMessage([
             'Signature' => $this->getSignature('foo'),
@@ -123,20 +114,18 @@ class MessageValidatorTest extends \PHPUnit_Framework_TestCase
         $validator->validate($message);
     }
 
-        /**
-         * @expectedException \Aws\Sns\Exception\InvalidSnsMessageException
-         * @expectedExceptionMessage The message signature is invalid.
-         */
-        public function testValidateFailsWhenSha256MessageIsInvalid()
-        {
-            $validator = new MessageValidator($this->getMockCertServerClient());
-            $message = $this->getTestMessage([
-                'Signature' => $this->getSignature('foo'),
-                 'SignatureVersion' => '2'
+    public function testValidateFailsWhenSha256MessageIsInvalid()
+    {
+        $this->expectException(InvalidSnsMessageException::class);
+        $this->expectExceptionMessage('The message signature is invalid.');
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message = $this->getTestMessage([
+            'Signature' => $this->getSignature('foo'),
+             'SignatureVersion' => '2'
 
-            ]);
-            $validator->validate($message);
-        }
+        ]);
+        $validator->validate($message);
+    }
 
     public function testValidateSucceedsWhenMessageIsValid()
     {

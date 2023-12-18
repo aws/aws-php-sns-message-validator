@@ -2,11 +2,13 @@
 
 namespace Aws\Sns;
 
+use Yoast\PHPUnitPolyfills\TestCases\TestCase;
+
 /**
  * @covers Aws\Sns\MessageValidator
  * @covers Aws\Sns\Message
  */
-class FunctionalValidationsTest extends \PHPUnit_Framework_TestCase
+class FunctionalValidationsTest extends TestCase
 {
     private static $certificate =
 '-----BEGIN CERTIFICATE-----

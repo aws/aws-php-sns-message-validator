@@ -51,7 +51,7 @@ if ($validator->isValid($message)) {
 
 The SNS Message Validator can be installed via [Composer][].
 
-    $ composer require aws/aws-php-sns-message-validator
+    composer require aws/aws-php-sns-message-validator
 
 ## Getting Help
 

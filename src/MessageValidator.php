@@ -62,7 +62,7 @@ class MessageValidator
      * @param string $hostNamePattern
      */
     public function __construct(
-        callable $certClient = null,
+        ?callable $certClient = null,
         $hostNamePattern = ''
     ) {
         $this->certClient = $certClient ?: function($certUrl) {

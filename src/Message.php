@@ -30,7 +30,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
     /**
      * Creates a Message object from the raw POST data
      *
-     * @return Message
+     * @return static
      * @throws \RuntimeException If the POST data is absent, or not a valid JSON document
      */
     public static function fromRawPostData()
@@ -41,25 +41,25 @@ class Message implements \ArrayAccess, \IteratorAggregate
         }
 
         // Read the raw POST data and JSON-decode it into a message.
-        return self::fromJsonString(file_get_contents('php://input'));
+        return static::fromJsonString(file_get_contents('php://input'));
     }
 
     /**
      * Creates a Message object from a PSR-7 Request or ServerRequest object.
      *
      * @param RequestInterface $request
-     * @return Message
+     * @return static
      */
     public static function fromPsrRequest(RequestInterface $request)
     {
-        return self::fromJsonString($request->getBody());
+        return static::fromJsonString($request->getBody());
     }
 
     /**
      * Creates a Message object from a JSON-decodable string.
      *
      * @param string $requestBody
-     * @return Message
+     * @return static
      */
     public static function fromJsonString($requestBody)
     {
@@ -68,7 +68,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
             throw new \RuntimeException('Invalid POST data.');
         }
 
-        return new Message($data);
+        return new static($data);
     }
 
     /**

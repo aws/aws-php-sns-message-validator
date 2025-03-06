@@ -8,7 +8,7 @@
 The **Amazon SNS Message Validator for PHP** library allows you to validate that
 incoming HTTP(S) POST messages are valid Amazon SNS notifications. This library
 is standalone and does not depend on the AWS SDK for PHP or Guzzle; however, it
-does require PHP 5.4+ and that the OpenSSL PHP extension is installed.
+does require PHP 8.1+ and that the OpenSSL PHP extension is installed.
 
 Jump To:
 * [Basic Usage](_#Basic-Usage_)

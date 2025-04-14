@@ -9,6 +9,7 @@ use Aws\Sns\Exception\InvalidSnsMessageException;
 class MessageValidator
 {
     const SIGNATURE_VERSION_1 = '1';
+    const SIGNATURE_VERSION_2 = '2';
 
     /**
      * @var callable Callable used to download the certificate content.
@@ -60,7 +61,7 @@ class MessageValidator
      *
      * @param callable $certClient Callable used to download the certificate.
      *                             Should have the following function signature:
-     *                             `function (string $certUrl) : string $certContent`
+     *                             `function (string $certUrl) : string|false $certContent`
      * @param string $hostNamePattern
      */
     public function __construct(
@@ -68,7 +69,9 @@ class MessageValidator
         $hostNamePattern = '',
         $bypassValidation = false
     ) {
-        $this->certClient = $certClient ?: 'file_get_contents';
+        $this->certClient = $certClient ?: function($certUrl) {
+            return @ file_get_contents($certUrl);
+        };
         $this->hostPattern = $hostNamePattern ?: self::$defaultHostPattern;
         $this->bypassValidation = $bypassValidation;
     }
@@ -112,7 +115,8 @@ class MessageValidator
         // Verify the signature of the message.
         $content = $this->getStringToSign($message);
         $signature = base64_decode($message['Signature']);
-        if (openssl_verify($content, $signature, $key, OPENSSL_ALGO_SHA1) != 1) {
+        $algo = ($message['SignatureVersion'] === self::SIGNATURE_VERSION_1 ? OPENSSL_ALGO_SHA1 : OPENSSL_ALGO_SHA256);
+        if (openssl_verify($content, $signature, $key, $algo) !== 1) {
             throw new InvalidSnsMessageException(
                 'The message signature is invalid.'
             );
@@ -158,7 +162,8 @@ class MessageValidator
             'Type',
         ];
 
-        if ($message['SignatureVersion'] !== self::SIGNATURE_VERSION_1) {
+        if ($message['SignatureVersion'] !== self::SIGNATURE_VERSION_1
+            && $message['SignatureVersion'] !== self::SIGNATURE_VERSION_2) {
             throw new InvalidSnsMessageException(
                 "The SignatureVersion \"{$message['SignatureVersion']}\" is not supported."
             );

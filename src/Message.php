@@ -61,7 +61,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
      * @param string $requestBody
      * @return Message
      */
-    private static function fromJsonString($requestBody)
+    public static function fromJsonString($requestBody)
     {
         $data = json_decode($requestBody, true);
         if (JSON_ERROR_NONE !== json_last_error() || !is_array($data)) {
@@ -92,26 +92,31 @@ class Message implements \ArrayAccess, \IteratorAggregate
         $this->data = $data;
     }
 
+    #[\ReturnTypeWillChange]
     public function getIterator()
     {
         return new \ArrayIterator($this->data);
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetExists($key)
     {
         return isset($this->data[$key]);
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetGet($key)
     {
         return isset($this->data[$key]) ? $this->data[$key] : null;
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetSet($key, $value)
     {
         $this->data[$key] = $value;
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetUnset($key)
     {
         unset($this->data[$key]);

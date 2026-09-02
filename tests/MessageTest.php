@@ -102,6 +102,39 @@ class MessageTest extends TestCase
         );
     }
 
+    public function testRejectsMessageWithBothSigningCertKeySpellings()
+    {
+        $this->assertDuplicateAliasesRejected(
+            ['SigningCertUrl' => 'alternate'] + $this->messageData,
+            'SigningCertURL',
+            'SigningCertUrl'
+        );
+    }
+
+    public function testRejectsMessageWithBothSubscribeKeySpellings()
+    {
+        $this->assertDuplicateAliasesRejected(
+            [
+                'Type' => 'SubscriptionConfirmation',
+                'SubscribeUrl' => 'alternate',
+            ] + $this->messageData,
+            'SubscribeURL',
+            'SubscribeUrl'
+        );
+    }
+
+    public function testRejectsMessageWithBothUnsubscribeKeySpellings()
+    {
+        $this->assertDuplicateAliasesRejected(
+            [
+                'UnsubscribeURL' => 'canonical',
+                'UnsubscribeUrl' => 'alternate',
+            ] + $this->messageData,
+            'UnsubscribeURL',
+            'UnsubscribeUrl'
+        );
+    }
+
     public function testCanCreateFromRawPost()
     {
         $_SERVER['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = 'Notification';
@@ -166,5 +199,19 @@ class MessageTest extends TestCase
         $this->assertTrue($message['foo'] === 'bar');
         unset($message['foo']);
         $this->assertFalse(isset($message['foo']));
+    }
+
+    private function assertDuplicateAliasesRejected(
+        array $messageData,
+        $canonicalKey,
+        $alternateKey
+    ) {
+        try {
+            new Message($messageData);
+            $this->fail('Expected duplicate field spellings to be rejected.');
+        } catch (\InvalidArgumentException $e) {
+            $this->assertNotFalse(strpos($e->getMessage(), $canonicalKey));
+            $this->assertNotFalse(strpos($e->getMessage(), $alternateKey));
+        }
     }
 }

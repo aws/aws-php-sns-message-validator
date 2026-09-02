@@ -3,6 +3,8 @@ namespace Aws\Sns;
 
 class MockPhpStream
 {
+    public $context;
+
     private static $startingData = '';
     private $index;
     private $length;

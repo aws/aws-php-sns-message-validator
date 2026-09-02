@@ -24,6 +24,12 @@ class Message implements \ArrayAccess, \IteratorAggregate
         'Token'
     ];
 
+    private static $keyAliases = [
+        ['SigningCertURL', 'SigningCertUrl'],
+        ['SubscribeURL', 'SubscribeUrl'],
+        ['UnsubscribeURL', 'UnsubscribeUrl'],
+    ];
+
     /** @var array The message data */
     private $data;
 
@@ -81,6 +87,8 @@ class Message implements \ArrayAccess, \IteratorAggregate
      */
     public function __construct(array $data)
     {
+        $this->validateKeyAliases($data);
+
         // Ensure that all the required keys for the message's type are present.
         $this->validateRequiredKeys($data, self::$requiredKeys);
         if ($data['Type'] === 'SubscriptionConfirmation'
@@ -130,6 +138,25 @@ class Message implements \ArrayAccess, \IteratorAggregate
     public function toArray()
     {
         return $this->data;
+    }
+
+    private function validateKeyAliases(array $data)
+    {
+        foreach (self::$keyAliases as $keyAliases) {
+            $present = [];
+            foreach ($keyAliases as $keyAlias) {
+                if (array_key_exists($keyAlias, $data)) {
+                    $present[] = $keyAlias;
+                }
+            }
+
+            if (count($present) > 1) {
+                throw new \InvalidArgumentException(sprintf(
+                    'The SNS message contains multiple spellings of the same field: %s.',
+                    implode(', ', $present)
+                ));
+            }
+        }
     }
 
     private function validateRequiredKeys(array $data, array $keys)

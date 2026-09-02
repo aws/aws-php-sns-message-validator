@@ -118,6 +118,14 @@ if ($message['Type'] === 'SubscriptionConfirmation') {
 }
 ```
 
+After `validate()` succeeds, Lambda-style URL keys such as `SubscribeUrl` are
+normalized to their canonical SNS spelling, such as `SubscribeURL`, on the
+`Message` object.
+
+* Before requesting `SubscribeURL`, verify that it uses HTTPS and that its host
+  matches the expected regional SNS endpoint, such as
+  `sns.<region>.amazonaws.com`.
+
 ### Receiving a Notification
 
 To receive a notification, use the same code as the preceding example, but

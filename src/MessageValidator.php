@@ -30,26 +30,28 @@ class MessageValidator
 
     private static function isLambdaStyle(Message $message)
     {
-        return isset($message['SigningCertUrl']);
+        $messageData = $message->toArray();
+
+        return array_key_exists('SigningCertUrl', $messageData)
+            || array_key_exists('SubscribeUrl', $messageData)
+            || array_key_exists('UnsubscribeUrl', $messageData);
     }
 
-    private static function convertLambdaMessage(Message $lambdaMessage)
+    private static function convertLambdaMessage(Message $message)
     {
+        $messageData = $message->toArray();
         $keyReplacements = [
             'SigningCertUrl' => 'SigningCertURL',
             'SubscribeUrl' => 'SubscribeURL',
             'UnsubscribeUrl' => 'UnsubscribeURL',
         ];
 
-        $message = clone $lambdaMessage;
         foreach ($keyReplacements as $lambdaKey => $canonicalKey) {
-            if (isset($message[$lambdaKey])) {
+            if (array_key_exists($lambdaKey, $messageData)) {
                 $message[$canonicalKey] = $message[$lambdaKey];
                 unset($message[$lambdaKey]);
             }
         }
-
-        return $message;
     }
 
     /**
@@ -74,6 +76,9 @@ class MessageValidator
     /**
      * Validates a message from SNS to ensure that it was delivered by AWS.
      *
+     * Lambda-style URL keys are canonicalized on the provided message after
+     * successful validation.
+     *
      * @param Message $message Message to validate.
      *
      * @throws InvalidSnsMessageException If the cert cannot be retrieved or its
@@ -82,16 +87,22 @@ class MessageValidator
      */
     public function validate(Message $message)
     {
+        $messageToValidate = $message;
         if (self::isLambdaStyle($message)) {
-            $message = self::convertLambdaMessage($message);
+            $messageToValidate = clone $message;
+            self::convertLambdaMessage($messageToValidate);
         }
 
         // Get the certificate.
-        $this->validateUrl($message['SigningCertURL']);
-        $certificate = call_user_func($this->certClient, $message['SigningCertURL']);
+        $certUrl = $messageToValidate['SigningCertURL'];
+        $this->validateUrl($certUrl);
+        $certificate = call_user_func(
+            $this->certClient,
+            $certUrl
+        );
         if ($certificate === false) {
             throw new InvalidSnsMessageException(
-                "Cannot get the certificate from \"{$message['SigningCertURL']}\"."
+                "Cannot get the certificate from \"{$certUrl}\"."
             );
         }
 
@@ -104,19 +115,28 @@ class MessageValidator
         }
 
         // Verify the signature of the message.
-        $content = $this->getStringToSign($message);
-        $signature = base64_decode($message['Signature']);
-        $algo = ($message['SignatureVersion'] === self::SIGNATURE_VERSION_1 ? OPENSSL_ALGO_SHA1 : OPENSSL_ALGO_SHA256);
+        $content = $this->getStringToSign($messageToValidate);
+        $signature = base64_decode($messageToValidate['Signature']);
+        $algo = $messageToValidate['SignatureVersion']
+            === self::SIGNATURE_VERSION_1
+            ? OPENSSL_ALGO_SHA1
+            : OPENSSL_ALGO_SHA256;
         if (openssl_verify($content, $signature, $key, $algo) !== 1) {
             throw new InvalidSnsMessageException(
                 'The message signature is invalid.'
             );
+        }
+
+        if ($messageToValidate !== $message) {
+            self::convertLambdaMessage($message);
         }
     }
 
     /**
      * Determines if a message is valid and that is was delivered by AWS. This
      * method does not throw exceptions and returns a simple boolean value.
+     *
+     * The provided message is not modified.
      *
      * @param Message $message The message to validate
      *
@@ -125,7 +145,7 @@ class MessageValidator
     public function isValid(Message $message)
     {
         try {
-            $this->validate($message);
+            $this->validate(clone $message);
             return true;
         } catch (InvalidSnsMessageException $e) {
             return false;

@@ -20,12 +20,11 @@ class MessageValidatorTest extends TestCase
         $csr = openssl_csr_new([], self::$pKey);
         $x509 = openssl_csr_sign($csr, null, self::$pKey, 1);
         openssl_x509_export($x509, self::$certificate);
-        openssl_x509_free($x509);
     }
 
     public static function tear_down_after_class()
     {
-        openssl_pkey_free(self::$pKey);
+        self::$pKey = null;
     }
 
     public function testIsValidReturnsFalseOnFailedValidation()
@@ -88,7 +87,9 @@ class MessageValidatorTest extends TestCase
     public function testValidateFailsWhenCannotGetCertificate()
     {
         $this->expectException(InvalidSnsMessageException::class);
-        $this->expectDeprecationMessageMatches('/Cannot get the certificate from ".+"./');
+        $this->expectExceptionMessage(
+            'Cannot get the certificate from "' . self::VALID_CERT_URL . '".'
+        );
         $validator = new MessageValidator($this->getMockHttpClient(false));
         $message = $this->getTestMessage();
         $validator->validate($message);
@@ -153,6 +154,120 @@ class MessageValidatorTest extends TestCase
         $this->assertTrue($validator->isValid($message));
     }
 
+    public function testLambdaStyleDetectionTriggersOnSubscribeUrlAlone()
+    {
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message = $this->getSignedTestMessage($validator, [
+            'Type' => 'SubscriptionConfirmation',
+            'SubscribeURL' => 'https://sns.foo.amazonaws.com/subscribe',
+            'Token' => 'token',
+        ]);
+        $message = $this->renameMessageKey(
+            $message,
+            'SubscribeURL',
+            'SubscribeUrl'
+        );
+
+        $validator->validate($message);
+
+        $this->assertSame(
+            'https://sns.foo.amazonaws.com/subscribe',
+            $message['SubscribeURL']
+        );
+        $this->assertFalse(isset($message['SubscribeUrl']));
+    }
+
+    public function testLambdaStyleDetectionTriggersOnUnsubscribeUrlAlone()
+    {
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message = $this->getSignedTestMessage($validator, [
+            'UnsubscribeURL' => 'https://sns.foo.amazonaws.com/unsubscribe',
+        ]);
+        $message = $this->renameMessageKey(
+            $message,
+            'UnsubscribeURL',
+            'UnsubscribeUrl'
+        );
+
+        $validator->validate($message);
+
+        $this->assertSame(
+            'https://sns.foo.amazonaws.com/unsubscribe',
+            $message['UnsubscribeURL']
+        );
+        $this->assertFalse(isset($message['UnsubscribeUrl']));
+    }
+
+    public function testValidateWritesCanonicalKeysBackToCallerMessage()
+    {
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message = $this->getSignedTestMessage($validator);
+        $message = $this->renameMessageKey(
+            $message,
+            'SigningCertURL',
+            'SigningCertUrl'
+        );
+
+        $validator->validate($message);
+
+        $this->assertSame(self::VALID_CERT_URL, $message['SigningCertURL']);
+        $this->assertFalse(isset($message['SigningCertUrl']));
+    }
+
+    public function testValidatePreservesCanonicalOnlyPayload()
+    {
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message = $this->getSignedTestMessage($validator);
+        $messageData = $message->toArray();
+
+        $validator->validate($message);
+
+        $this->assertSame($messageData, $message->toArray());
+    }
+
+    public function testIsValidDoesNotMutateLambdaStyleMessage()
+    {
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message = $this->getSignedTestMessage($validator, [
+            'UnsubscribeURL' => 'https://sns.foo.amazonaws.com/unsubscribe',
+        ]);
+        $message = $this->renameMessageKey(
+            $message,
+            'SigningCertURL',
+            'SigningCertUrl'
+        );
+        $message = $this->renameMessageKey(
+            $message,
+            'UnsubscribeURL',
+            'UnsubscribeUrl'
+        );
+        $messageData = $message->toArray();
+
+        $this->assertTrue($validator->isValid($message));
+        $this->assertSame($messageData, $message->toArray());
+    }
+
+    public function testFailedValidateDoesNotCanonicalizeCallerMessage()
+    {
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $message = $this->getTestMessage([
+            'Signature' => $this->getSignature('invalid'),
+        ]);
+        $message = $this->renameMessageKey(
+            $message,
+            'SigningCertURL',
+            'SigningCertUrl'
+        );
+
+        try {
+            $validator->validate($message);
+            $this->fail('Expected validation to fail.');
+        } catch (InvalidSnsMessageException $e) {
+            $this->assertSame(self::VALID_CERT_URL, $message['SigningCertUrl']);
+            $this->assertFalse(isset($message['SigningCertURL']));
+        }
+    }
+
     public function testBuildsStringToSignCorrectly()
     {
         $validator = new MessageValidator();
@@ -193,6 +308,31 @@ STRINGTOSIGN;
             'Signature'        => true,
             'SignatureVersion' => '1',
         ]);
+    }
+
+    private function getSignedTestMessage(
+        MessageValidator $validator,
+        array $customData = []
+    ) {
+        $message = $this->getTestMessage($customData);
+        $message['Signature'] = $this->getSignature(
+            $validator->getStringToSign($message),
+            $message['SignatureVersion']
+        );
+
+        return $message;
+    }
+
+    private function renameMessageKey(
+        Message $message,
+        $canonicalKey,
+        $alternateKey
+    ) {
+        $messageData = $message->toArray();
+        $messageData[$alternateKey] = $messageData[$canonicalKey];
+        unset($messageData[$canonicalKey]);
+
+        return new Message($messageData);
     }
 
     private function getMockHttpClient($responseBody = '')

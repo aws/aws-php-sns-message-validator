@@ -11,6 +11,35 @@ class MessageValidator
     const SIGNATURE_VERSION_1 = '1';
     const SIGNATURE_VERSION_2 = '2';
 
+    private static $signableKeysByType = [
+        'Notification' => [
+            'Message',
+            'MessageId',
+            'Subject',
+            'Timestamp',
+            'TopicArn',
+            'Type',
+        ],
+        'SubscriptionConfirmation' => [
+            'Message',
+            'MessageId',
+            'SubscribeURL',
+            'Timestamp',
+            'Token',
+            'TopicArn',
+            'Type',
+        ],
+        'UnsubscribeConfirmation' => [
+            'Message',
+            'MessageId',
+            'SubscribeURL',
+            'Timestamp',
+            'Token',
+            'TopicArn',
+            'Type',
+        ],
+    ];
+
     /**
      * @var callable Callable used to download the certificate content.
      */
@@ -93,6 +122,8 @@ class MessageValidator
             self::convertLambdaMessage($messageToValidate);
         }
 
+        $content = $this->getStringToSign($messageToValidate);
+
         // Get the certificate.
         $certUrl = $messageToValidate['SigningCertURL'];
         $this->validateUrl($certUrl);
@@ -115,7 +146,6 @@ class MessageValidator
         }
 
         // Verify the signature of the message.
-        $content = $this->getStringToSign($messageToValidate);
         $signature = base64_decode($messageToValidate['Signature']);
         $algo = $messageToValidate['SignatureVersion']
             === self::SIGNATURE_VERSION_1
@@ -162,17 +192,6 @@ class MessageValidator
      */
     public function getStringToSign(Message $message)
     {
-        static $signableKeys = [
-            'Message',
-            'MessageId',
-            'Subject',
-            'SubscribeURL',
-            'Timestamp',
-            'Token',
-            'TopicArn',
-            'Type',
-        ];
-
         if ($message['SignatureVersion'] !== self::SIGNATURE_VERSION_1
             && $message['SignatureVersion'] !== self::SIGNATURE_VERSION_2) {
             throw new InvalidSnsMessageException(
@@ -180,11 +199,45 @@ class MessageValidator
             );
         }
 
+        $type = $message['Type'];
+        if (!is_string($type) || !isset(self::$signableKeysByType[$type])) {
+            throw new InvalidSnsMessageException(
+                'The SNS message Type is not supported.'
+            );
+        }
+
         $stringToSign = '';
-        foreach ($signableKeys as $key) {
-            if (isset($message[$key])) {
-                $stringToSign .= "{$key}\n{$message[$key]}\n";
+        foreach (self::$signableKeysByType[$type] as $key) {
+            if (!isset($message[$key])) {
+                if ($key === 'Subject') {
+                    continue;
+                }
+
+                throw new InvalidSnsMessageException(
+                    "The SNS message field \"{$key}\" is required."
+                );
             }
+
+            $value = $message[$key];
+            if (!is_scalar($value)) {
+                throw new InvalidSnsMessageException(
+                    "The SNS message field \"{$key}\" must be a scalar value."
+                );
+            }
+            $value = (string) $value;
+
+            // Message and Subject may contain newlines. Newlines in signed
+            // metadata would make the field-delimited string ambiguous.
+            if ($key !== 'Message'
+                && $key !== 'Subject'
+                && strpbrk($value, "\r\n") !== false
+            ) {
+                throw new InvalidSnsMessageException(
+                    "The SNS message field \"{$key}\" must not contain newlines."
+                );
+            }
+
+            $stringToSign .= "{$key}\n{$value}\n";
         }
 
         return $stringToSign;

@@ -14,7 +14,7 @@ class MessageTest extends TestCase
         'MessageId' => 'b',
         'Timestamp' => 'c',
         'TopicArn' => 'd',
-        'Type' => 'e',
+        'Type' => 'Notification',
         'Subject' => 'f',
         'Signature' => 'g',
         'SignatureVersion' => '1',
@@ -72,6 +72,14 @@ class MessageTest extends TestCase
         $data = $this->messageData;
         unset($data['Type']);
         new Message($data);
+    }
+
+    public function testConstructorFailsWithUnsupportedType()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('The SNS message Type is not supported.');
+
+        new Message(['Type' => 'Unsupported'] + $this->messageData);
     }
 
     public function testConstructorFailsWithMissingData()

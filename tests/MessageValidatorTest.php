@@ -291,6 +291,163 @@ STRINGTOSIGN;
         );
     }
 
+    public function testBuildsTypeSpecificNotificationStringToSign()
+    {
+        $validator = new MessageValidator();
+        $message = $this->getTestMessage([
+            'Subject' => 'subject',
+            'SubscribeURL' => 'https://sns.foo.amazonaws.com/subscribe',
+            'Token' => 'token',
+        ]);
+
+        $stringToSign = $validator->getStringToSign($message);
+
+        $this->assertStringContainsString("Subject\nsubject\n", $stringToSign);
+        $this->assertStringNotContainsString("SubscribeURL\n", $stringToSign);
+        $this->assertStringNotContainsString("Token\n", $stringToSign);
+    }
+
+    public function testBuildsTypeSpecificConfirmationStringToSign()
+    {
+        $validator = new MessageValidator();
+        $message = $this->getTestMessage([
+            'Type' => 'SubscriptionConfirmation',
+            'Subject' => 'subject',
+            'SubscribeURL' => 'https://sns.foo.amazonaws.com/subscribe',
+            'Token' => 'token',
+        ]);
+
+        $stringToSign = $validator->getStringToSign($message);
+
+        $this->assertStringNotContainsString("Subject\n", $stringToSign);
+        $this->assertStringContainsString(
+            "SubscribeURL\nhttps://sns.foo.amazonaws.com/subscribe\n",
+            $stringToSign
+        );
+        $this->assertStringContainsString("Token\ntoken\n", $stringToSign);
+    }
+
+    /**
+     * @dataProvider signedMetadataWithNewlineProvider
+     */
+    public function testRejectsNewlinesInSignedMetadata($type, $key, $value)
+    {
+        $validator = new MessageValidator();
+        $message = $this->getTestMessage([
+            'Type' => $type,
+            'SubscribeURL' => 'https://sns.foo.amazonaws.com/subscribe',
+            'Token' => 'token',
+        ]);
+        $message[$key] = $value;
+
+        $this->expectException(InvalidSnsMessageException::class);
+        $validator->getStringToSign($message);
+    }
+
+    public function signedMetadataWithNewlineProvider()
+    {
+        return [
+            ['Notification', 'MessageId', "value\ninjection"],
+            ['Notification', 'Timestamp', "value\rinjection"],
+            ['Notification', 'TopicArn', "value\ninjection"],
+            [
+                'SubscriptionConfirmation',
+                'SubscribeURL',
+                "value\ninjection",
+            ],
+            ['SubscriptionConfirmation', 'Token', "value\ninjection"],
+        ];
+    }
+
+    public function testAllowsNewlinesInMessageAndSubject()
+    {
+        $validator = new MessageValidator();
+        $message = $this->getTestMessage([
+            'Message' => "first\nsecond",
+            'Subject' => "first\nsecond",
+        ]);
+
+        $stringToSign = $validator->getStringToSign($message);
+
+        $this->assertStringContainsString(
+            "Message\nfirst\nsecond\n",
+            $stringToSign
+        );
+        $this->assertStringContainsString(
+            "Subject\nfirst\nsecond\n",
+            $stringToSign
+        );
+    }
+
+    public function testRejectsMissingSignedFieldAfterConstruction()
+    {
+        $validator = new MessageValidator();
+        $message = $this->getTestMessage();
+        unset($message['TopicArn']);
+
+        $this->expectException(InvalidSnsMessageException::class);
+        $this->expectExceptionMessage(
+            'The SNS message field "TopicArn" is required.'
+        );
+        $validator->getStringToSign($message);
+    }
+
+    public function testRejectsNonScalarSignedFieldAfterConstruction()
+    {
+        $validator = new MessageValidator();
+        $message = $this->getTestMessage();
+        $message['TopicArn'] = ['invalid'];
+
+        $this->expectException(InvalidSnsMessageException::class);
+        $this->expectExceptionMessage(
+            'The SNS message field "TopicArn" must be a scalar value.'
+        );
+        $validator->getStringToSign($message);
+    }
+
+    public function testRejectsCrossTopicCanonicalStringCollision()
+    {
+        $validator = new MessageValidator($this->getMockCertServerClient());
+        $attackerTopic = 'arn:aws:sns:us-east-1:111111111111:attacker';
+        $victimTopic = 'arn:aws:sns:us-east-1:222222222222:victim';
+        $attackerMessage = $this->getTestMessage([
+            'Message' => "forged message\n"
+                . "MessageId\nforged-message-id\n"
+                . "Timestamp\n2026-10-26T12:00:00.000Z\n"
+                . "TopicArn\n{$victimTopic}\n"
+                . "Type\nNotification",
+            'MessageId' => 'attacker-message-id',
+            'Timestamp' => '2026-10-26T11:00:00.000Z',
+            'TopicArn' => $attackerTopic,
+            'SignatureVersion' => '2',
+        ]);
+        $attackerMessage['Signature'] = $this->getSignature(
+            $validator->getStringToSign($attackerMessage),
+            '2'
+        );
+        $this->assertTrue($validator->isValid($attackerMessage));
+
+        $forgedMessage = $this->getTestMessage([
+            'Message' => 'forged message',
+            'MessageId' => 'forged-message-id',
+            'Timestamp' => '2026-10-26T12:00:00.000Z',
+            'TopicArn' => $victimTopic,
+            'Signature' => $attackerMessage['Signature'],
+            'SignatureVersion' => '2',
+        ]);
+        $forgedMessage['Type'] = "Notification\n"
+            . "MessageId\nattacker-message-id\n"
+            . "Timestamp\n2026-10-26T11:00:00.000Z\n"
+            . "TopicArn\n{$attackerTopic}\n"
+            . "Type\nNotification";
+
+        $this->assertSame(
+            $this->getLegacyStringToSign($attackerMessage),
+            $this->getLegacyStringToSign($forgedMessage)
+        );
+        $this->assertFalse($validator->isValid($forgedMessage));
+    }
+
     /**
      * @param array $customData
      *
@@ -362,6 +519,28 @@ STRINGTOSIGN;
         }
 
         return base64_encode($signature);
+    }
+
+    private function getLegacyStringToSign(Message $message)
+    {
+        $signableKeys = [
+            'Message',
+            'MessageId',
+            'Subject',
+            'SubscribeURL',
+            'Timestamp',
+            'Token',
+            'TopicArn',
+            'Type',
+        ];
+        $stringToSign = '';
+        foreach ($signableKeys as $key) {
+            if (isset($message[$key])) {
+                $stringToSign .= "{$key}\n{$message[$key]}\n";
+            }
+        }
+
+        return $stringToSign;
     }
 }
 

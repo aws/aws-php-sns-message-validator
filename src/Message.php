@@ -24,6 +24,12 @@ class Message implements \ArrayAccess, \IteratorAggregate
         'Token'
     ];
 
+    private static $validTypes = [
+        'Notification',
+        'SubscriptionConfirmation',
+        'UnsubscribeConfirmation',
+    ];
+
     private static $keyAliases = [
         ['SigningCertURL', 'SigningCertUrl'],
         ['SubscribeURL', 'SubscribeUrl'],
@@ -91,6 +97,7 @@ class Message implements \ArrayAccess, \IteratorAggregate
 
         // Ensure that all the required keys for the message's type are present.
         $this->validateRequiredKeys($data, self::$requiredKeys);
+        $this->validateType($data['Type']);
         if ($data['Type'] === 'SubscriptionConfirmation'
             || $data['Type'] === 'UnsubscribeConfirmation'
         ) {
@@ -156,6 +163,17 @@ class Message implements \ArrayAccess, \IteratorAggregate
                     implode(', ', $present)
                 ));
             }
+        }
+    }
+
+    private function validateType($type)
+    {
+        if (!is_string($type)
+            || !in_array($type, self::$validTypes, true)
+        ) {
+            throw new \InvalidArgumentException(
+                'The SNS message Type is not supported.'
+            );
         }
     }
 

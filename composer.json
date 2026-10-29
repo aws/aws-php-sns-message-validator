@@ -12,7 +12,7 @@
         }
     ],
     "support": {
-        "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
+        "forum": "https://github.com/aws/aws-php-sns-message-validator/discussions",
         "issues": "https://github.com/aws/aws-sns-message-validator/issues"
     },
     "require": {
